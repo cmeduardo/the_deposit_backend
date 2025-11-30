@@ -7,6 +7,12 @@ const app = express();
 const db = require("./app/models");
 const rutasAutenticacion = require("./app/routes/autenticacion.routes");
 const rutasUsuarios = require("./app/routes/usuario.routes");
+const rutasUnidades = require("./app/routes/unidad.routes");
+const rutasCategoriasProductos = require("./app/routes/categoria_producto.routes");
+const rutasProductos = require("./app/routes/producto.routes");
+const rutasPresentacionesProductos = require("./app/routes/presentacion_producto.routes");
+
+
 const { swaggerUi, swaggerSpec } = require("./swagger");
 
 // Middlewares
@@ -21,6 +27,11 @@ app.use(
 // Rutas
 app.use("/api/autenticacion", rutasAutenticacion);
 app.use("/api/usuarios", rutasUsuarios);
+app.use("/api/unidades", rutasUnidades);
+app.use("/api/categorias-productos", rutasCategoriasProductos);
+app.use("/api/productos", rutasProductos);
+app.use("/api/presentaciones-productos", rutasPresentacionesProductos);
+
 
 // Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

@@ -3,8 +3,8 @@ const jwt = require("jsonwebtoken");
 const db = require("../models");
 const Usuario = db.usuarios;
 
-const JWT_SECRETO = process.env.JWT_SECRETO || "cambiar_esto";
-const JWT_EXPIRA_EN = process.env.JWT_EXPIRA_EN || "7d";
+const JWT_SECRETO = process.env.JWT_SECRETO;
+const JWT_EXPIRA_EN = process.env.JWT_EXPIRA_EN;
 
 const generarToken = (usuario) => {
   return jwt.sign(
