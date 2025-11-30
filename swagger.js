@@ -1,5 +1,7 @@
+require("dotenv").config();
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
+const RUTA = process.env.BASE_URL;
 
 const options = {
   definition: {
@@ -12,7 +14,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: RUTA,
       },
     ],
     components: {

@@ -41,7 +41,8 @@ app.use((req, res) => {
   res.status(404).json({ mensaje: "Ruta no encontrada" });
 });
 
-const PUERTO = process.env.PORT || 3000;
+const PUERTO = process.env.PORT;
+const RUTA = process.env.BASE_URL;
 
 db.sequelize
   .authenticate()
@@ -57,6 +58,7 @@ db.sequelize
     app.listen(PUERTO, () => {
       console.log(`Servidor escuchando en el puerto ${PUERTO}`);
       console.log(`Documentación disponible en http://localhost:${PUERTO}/api-docs`);
+      console.log(`Documentación disponible en ${RUTA}/api-docs`);
     });
   })
   .catch((err) => {
