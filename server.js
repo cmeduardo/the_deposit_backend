@@ -11,7 +11,10 @@ const rutasUnidades = require("./app/routes/unidad.routes");
 const rutasCategoriasProductos = require("./app/routes/categoria_producto.routes");
 const rutasProductos = require("./app/routes/producto.routes");
 const rutasPresentacionesProductos = require("./app/routes/presentacion_producto.routes");
-
+const rutasProveedores = require("./app/routes/proveedor.routes");
+const rutasUbicacionesInventario = require("./app/routes/ubicacion_inventario.routes");
+const rutasInventario = require("./app/routes/inventario.routes");
+const rutasCompras = require("./app/routes/compra.routes");
 
 const { swaggerUi, swaggerSpec } = require("./swagger");
 
@@ -31,6 +34,10 @@ app.use("/api/unidades", rutasUnidades);
 app.use("/api/categorias-productos", rutasCategoriasProductos);
 app.use("/api/productos", rutasProductos);
 app.use("/api/presentaciones-productos", rutasPresentacionesProductos);
+app.use("/api/proveedores", rutasProveedores);
+app.use("/api/ubicaciones-inventario", rutasUbicacionesInventario);
+app.use("/api/inventario", rutasInventario);
+app.use("/api/compras", rutasCompras);
 
 
 // Swagger
