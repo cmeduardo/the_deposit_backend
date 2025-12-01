@@ -158,6 +158,10 @@ const crearPedido = async (req, res) => {
 
         fuente = fuente || (req.usuario.rol === "CLIENTE" ? "ONLINE" : "ADMIN");
         cargo_envio = cargo_envio !== undefined ? cargo_envio : 0;
+        
+        const presentacionIds = [
+                ...new Set(detalles.map((d) => d.id_presentacion_producto)),
+            ];
 
         const presentaciones = await Presentacion.findAll({
             where: {
