@@ -41,6 +41,10 @@ db.detalles_pedidos = require("./detalle_pedido.model.js")(sequelize, Sequelize)
 db.ventas = require("./venta.model.js")(sequelize, Sequelize);
 db.detalles_ventas = require("./detalle_venta.model.js")(sequelize, Sequelize);
 
+db.categorias_gastos = require("./categoria_gasto.model.js")(sequelize, Sequelize);
+db.gastos = require("./gasto.model.js")(sequelize, Sequelize);
+
+
 
 db.unidades.hasMany(db.productos, { foreignKey: "id_unidad_base", as: "productos_base" });
 db.productos.belongsTo(db.unidades, { foreignKey: "id_unidad_base", as: "unidad_base" });
@@ -237,6 +241,27 @@ db.detalles_ventas.belongsTo(db.presentaciones_productos, {
   foreignKey: "id_presentacion_producto",
   as: "presentacion",
 });
+
+// CategoriaGasto ↔ Gastos
+db.categorias_gastos.hasMany(db.gastos, {
+  foreignKey: "id_categoria_gasto",
+  as: "gastos",
+});
+db.gastos.belongsTo(db.categorias_gastos, {
+  foreignKey: "id_categoria_gasto",
+  as: "categoria_gasto",
+});
+
+// Usuario (quien registra) ↔ Gastos
+db.usuarios.hasMany(db.gastos, {
+  foreignKey: "id_usuario_registro",
+  as: "gastos_registrados",
+});
+db.gastos.belongsTo(db.usuarios, {
+  foreignKey: "id_usuario_registro",
+  as: "usuario_registro",
+});
+
 
 
 module.exports = db;
