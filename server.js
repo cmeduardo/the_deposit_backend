@@ -21,6 +21,8 @@ const rutasCategoriasGastos = require("./app/routes/categoria_gasto.routes");
 const rutasGastos = require("./app/routes/gasto.routes");
 const rutasCobros = require("./app/routes/cobro_cliente.routes");
 const rutasCuentasCobrar = require("./app/routes/cuentas_cobrar.routes");
+const rutasEnvios = require("./app/routes/envio.routes");
+
 
 
 
@@ -52,6 +54,7 @@ app.use("/api/categorias-gastos", rutasCategoriasGastos);
 app.use("/api/gastos", rutasGastos);
 app.use("/api/cobros", rutasCobros);
 app.use("/api/cuentas-por-cobrar", rutasCuentasCobrar);
+app.use("/api/envios", rutasEnvios);
 
 
 

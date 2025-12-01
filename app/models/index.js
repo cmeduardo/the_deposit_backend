@@ -54,6 +54,9 @@ db.compras.belongsTo(db.proveedores, { foreignKey: "id_proveedor", as: "proveedo
 
 db.cobros_clientes = require("./cobro_cliente.model.js")(sequelize, Sequelize);
 
+db.envios = require("./envio.model.js")(sequelize, Sequelize);
+
+
 
 
 // Categoría de producto
@@ -286,6 +289,25 @@ db.cobros_clientes.belongsTo(db.usuarios, {
   as: "usuario_registro",
 });
 
+// Pedido ↔ Envios
+db.pedidos.hasMany(db.envios, {
+  foreignKey: "id_pedido",
+  as: "envios",
+});
+db.envios.belongsTo(db.pedidos, {
+  foreignKey: "id_pedido",
+  as: "pedido",
+});
+
+// Venta ↔ Envios
+db.ventas.hasMany(db.envios, {
+  foreignKey: "id_venta",
+  as: "envios",
+});
+db.envios.belongsTo(db.ventas, {
+  foreignKey: "id_venta",
+  as: "venta",
+});
 
 
 module.exports = db;
