@@ -52,6 +52,10 @@ db.productos.belongsTo(db.unidades, { foreignKey: "id_unidad_base", as: "unidad_
 db.proveedores.hasMany(db.compras, { foreignKey: "id_proveedor", as: "compras" });
 db.compras.belongsTo(db.proveedores, { foreignKey: "id_proveedor", as: "proveedor" });
 
+db.cobros_clientes = require("./cobro_cliente.model.js")(sequelize, Sequelize);
+
+
+
 // Categoría de producto
 db.categorias_productos.hasMany(db.productos, {
   foreignKey: "id_categoria",
@@ -258,6 +262,26 @@ db.usuarios.hasMany(db.gastos, {
   as: "gastos_registrados",
 });
 db.gastos.belongsTo(db.usuarios, {
+  foreignKey: "id_usuario_registro",
+  as: "usuario_registro",
+});
+
+// Venta ↔ CobrosCliente
+db.ventas.hasMany(db.cobros_clientes, {
+  foreignKey: "id_venta",
+  as: "cobros",
+});
+db.cobros_clientes.belongsTo(db.ventas, {
+  foreignKey: "id_venta",
+  as: "venta",
+});
+
+// Usuario ↔ CobrosCliente (quién registra el cobro)
+db.usuarios.hasMany(db.cobros_clientes, {
+  foreignKey: "id_usuario_registro",
+  as: "cobros_registrados",
+});
+db.cobros_clientes.belongsTo(db.usuarios, {
   foreignKey: "id_usuario_registro",
   as: "usuario_registro",
 });
