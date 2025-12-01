@@ -36,6 +36,11 @@ db.movimientos_inventario = require("./movimiento_inventario.model.js")(sequeliz
 db.compras = require("./compra.model.js")(sequelize, Sequelize);
 db.detalles_compras = require("./detalle_compra.model.js")(sequelize, Sequelize);
 
+db.pedidos = require("./pedido.model.js")(sequelize, Sequelize);
+db.detalles_pedidos = require("./detalle_pedido.model.js")(sequelize, Sequelize);
+db.ventas = require("./venta.model.js")(sequelize, Sequelize);
+db.detalles_ventas = require("./detalle_venta.model.js")(sequelize, Sequelize);
+
 
 db.unidades.hasMany(db.productos, { foreignKey: "id_unidad_base", as: "productos_base" });
 db.productos.belongsTo(db.unidades, { foreignKey: "id_unidad_base", as: "unidad_base" });
@@ -142,5 +147,96 @@ db.movimientos_inventario.belongsTo(db.ubicaciones_inventario, {
   foreignKey: "id_ubicacion",
   as: "ubicacion",
 });
+
+// Usuario cliente ↔ Pedidos
+db.usuarios.hasMany(db.pedidos, {
+  foreignKey: "id_usuario_cliente",
+  as: "pedidos_cliente",
+});
+db.pedidos.belongsTo(db.usuarios, {
+  foreignKey: "id_usuario_cliente",
+  as: "cliente_usuario",
+});
+
+// Ubicación salida ↔ Pedidos
+db.ubicaciones_inventario.hasMany(db.pedidos, {
+  foreignKey: "id_ubicacion_salida",
+  as: "pedidos",
+});
+db.pedidos.belongsTo(db.ubicaciones_inventario, {
+  foreignKey: "id_ubicacion_salida",
+  as: "ubicacion_salida",
+});
+
+// Pedido ↔ Detalles
+db.pedidos.hasMany(db.detalles_pedidos, {
+  foreignKey: "id_pedido",
+  as: "detalles",
+});
+db.detalles_pedidos.belongsTo(db.pedidos, {
+  foreignKey: "id_pedido",
+  as: "pedido",
+});
+
+// Presentación ↔ DetallePedido
+db.presentaciones_productos.hasMany(db.detalles_pedidos, {
+  foreignKey: "id_presentacion_producto",
+  as: "detalles_pedido",
+});
+db.detalles_pedidos.belongsTo(db.presentaciones_productos, {
+  foreignKey: "id_presentacion_producto",
+  as: "presentacion",
+});
+
+// Venta ↔ Pedido
+db.pedidos.hasOne(db.ventas, {
+  foreignKey: "id_pedido",
+  as: "venta",
+});
+db.ventas.belongsTo(db.pedidos, {
+  foreignKey: "id_pedido",
+  as: "pedido",
+});
+
+// Usuario cliente ↔ Ventas
+db.usuarios.hasMany(db.ventas, {
+  foreignKey: "id_usuario_cliente",
+  as: "ventas_cliente",
+});
+db.ventas.belongsTo(db.usuarios, {
+  foreignKey: "id_usuario_cliente",
+  as: "cliente_usuario",
+});
+
+// Ubicación salida ↔ Ventas
+db.ubicaciones_inventario.hasMany(db.ventas, {
+  foreignKey: "id_ubicacion_salida",
+  as: "ventas",
+});
+db.ventas.belongsTo(db.ubicaciones_inventario, {
+  foreignKey: "id_ubicacion_salida",
+  as: "ubicacion_salida",
+});
+
+// Venta ↔ Detalles
+db.ventas.hasMany(db.detalles_ventas, {
+  foreignKey: "id_venta",
+  as: "detalles",
+});
+db.detalles_ventas.belongsTo(db.ventas, {
+  foreignKey: "id_venta",
+  as: "venta",
+});
+
+// Presentación ↔ DetalleVenta
+db.presentaciones_productos.hasMany(db.detalles_ventas, {
+  foreignKey: "id_presentacion_producto",
+  as: "detalles_venta",
+});
+db.detalles_ventas.belongsTo(db.presentaciones_productos, {
+  foreignKey: "id_presentacion_producto",
+  as: "presentacion",
+});
+
 
 module.exports = db;

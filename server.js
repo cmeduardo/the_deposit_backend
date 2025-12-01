@@ -15,6 +15,9 @@ const rutasProveedores = require("./app/routes/proveedor.routes");
 const rutasUbicacionesInventario = require("./app/routes/ubicacion_inventario.routes");
 const rutasInventario = require("./app/routes/inventario.routes");
 const rutasCompras = require("./app/routes/compra.routes");
+const rutasPedidos = require("./app/routes/pedido.routes");
+const rutasVentas = require("./app/routes/venta.routes");
+
 
 const { swaggerUi, swaggerSpec } = require("./swagger");
 
@@ -38,6 +41,9 @@ app.use("/api/proveedores", rutasProveedores);
 app.use("/api/ubicaciones-inventario", rutasUbicacionesInventario);
 app.use("/api/inventario", rutasInventario);
 app.use("/api/compras", rutasCompras);
+app.use("/api/pedidos", rutasPedidos);
+app.use("/api/ventas", rutasVentas);
+
 
 
 // Swagger
