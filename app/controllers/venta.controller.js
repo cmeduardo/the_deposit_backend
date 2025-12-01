@@ -130,7 +130,6 @@ const crearVenta = async (req, res) => {
                     },
                 ],
                 transaction: t,
-                lock: t.LOCK.UPDATE,
             });
 
             if (!pedido) {
