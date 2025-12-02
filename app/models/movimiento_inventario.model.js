@@ -34,6 +34,7 @@ module.exports = (sequelize, Sequelize) => {
           "AJUSTE",
           "CONSIGNACION_SALIDA",
           "CONSIGNACION_RETORNO",
+          "RESERVA_PEDIDO",
           "OTRO"
         ),
         allowNull: false,

@@ -28,7 +28,7 @@ module.exports = (sequelize, Sequelize) => {
         onDelete: "RESTRICT",
       },
       fuente: {
-        type: Sequelize.ENUM("ONLINE", "ADMIN", "OTRO"),
+        type: Sequelize.ENUM("ONLINE", "ADMIN", "OTRO", "TIENDA_EN_LINEA", "DESDE_CARRITO"),
         allowNull: false,
         defaultValue: "ONLINE",
       },

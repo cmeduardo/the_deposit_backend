@@ -40,7 +40,7 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
       },
       origen_precio: {
-        type: Sequelize.ENUM("SISTEMA", "MANUAL"),
+        type: Sequelize.ENUM("SISTEMA", "MANUAL", "DESDE_CARRITO"),
         allowNull: false,
         defaultValue: "SISTEMA",
       },
