@@ -56,6 +56,9 @@ db.cobros_clientes = require("./cobro_cliente.model.js")(sequelize, Sequelize);
 
 db.envios = require("./envio.model.js")(sequelize, Sequelize);
 
+db.consignaciones = require("./consignacion.model.js")(sequelize, Sequelize);
+db.detalles_consignaciones = require("./detalle_consignacion.model.js")(sequelize, Sequelize);
+
 
 
 
@@ -307,6 +310,47 @@ db.ventas.hasMany(db.envios, {
 db.envios.belongsTo(db.ventas, {
   foreignKey: "id_venta",
   as: "venta",
+});
+
+
+// Consignacion ↔ Detalles
+db.consignaciones.hasMany(db.detalles_consignaciones, {
+  foreignKey: "id_consignacion",
+  as: "detalles",
+});
+db.detalles_consignaciones.belongsTo(db.consignaciones, {
+  foreignKey: "id_consignacion",
+  as: "consignacion",
+});
+
+// Consignacion ↔ Usuario (cliente/socio)
+db.usuarios.hasMany(db.consignaciones, {
+  foreignKey: "id_usuario_cliente",
+  as: "consignaciones_cliente",
+});
+db.consignaciones.belongsTo(db.usuarios, {
+  foreignKey: "id_usuario_cliente",
+  as: "cliente_usuario",
+});
+
+// Consignacion ↔ UbicacionInventario
+db.ubicaciones_inventario.hasMany(db.consignaciones, {
+  foreignKey: "id_ubicacion_salida",
+  as: "consignaciones_salida",
+});
+db.consignaciones.belongsTo(db.ubicaciones_inventario, {
+  foreignKey: "id_ubicacion_salida",
+  as: "ubicacion_salida",
+});
+
+// DetalleConsignacion ↔ PresentacionProducto
+db.presentaciones_productos.hasMany(db.detalles_consignaciones, {
+  foreignKey: "id_presentacion_producto",
+  as: "detalles_consignacion",
+});
+db.detalles_consignaciones.belongsTo(db.presentaciones_productos, {
+  foreignKey: "id_presentacion_producto",
+  as: "presentacion",
 });
 
 
