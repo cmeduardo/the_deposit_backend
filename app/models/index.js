@@ -59,6 +59,10 @@ db.envios = require("./envio.model.js")(sequelize, Sequelize);
 db.consignaciones = require("./consignacion.model.js")(sequelize, Sequelize);
 db.detalles_consignaciones = require("./detalle_consignacion.model.js")(sequelize, Sequelize);
 
+db.carritos_compras = require("./carrito_compra.model.js")(sequelize, Sequelize);
+db.items_carrito = require("./item_carrito.model.js")(sequelize, Sequelize);
+
+
 
 
 
@@ -349,6 +353,36 @@ db.presentaciones_productos.hasMany(db.detalles_consignaciones, {
   as: "detalles_consignacion",
 });
 db.detalles_consignaciones.belongsTo(db.presentaciones_productos, {
+  foreignKey: "id_presentacion_producto",
+  as: "presentacion",
+});
+
+// Usuario CLIENTE ↔ Carritos
+db.usuarios.hasMany(db.carritos_compras, {
+  foreignKey: "id_usuario_cliente",
+  as: "carritos_cliente",
+});
+db.carritos_compras.belongsTo(db.usuarios, {
+  foreignKey: "id_usuario_cliente",
+  as: "cliente_usuario",
+});
+
+// CarritoCompra ↔ ItemsCarrito
+db.carritos_compras.hasMany(db.items_carrito, {
+  foreignKey: "id_carrito",
+  as: "items",
+});
+db.items_carrito.belongsTo(db.carritos_compras, {
+  foreignKey: "id_carrito",
+  as: "carrito",
+});
+
+// ItemCarrito ↔ PresentacionProducto
+db.presentaciones_productos.hasMany(db.items_carrito, {
+  foreignKey: "id_presentacion_producto",
+  as: "items_carrito",
+});
+db.items_carrito.belongsTo(db.presentaciones_productos, {
   foreignKey: "id_presentacion_producto",
   as: "presentacion",
 });

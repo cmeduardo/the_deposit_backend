@@ -23,8 +23,8 @@ const rutasCobros = require("./app/routes/cobro_cliente.routes");
 const rutasCuentasCobrar = require("./app/routes/cuentas_cobrar.routes");
 const rutasEnvios = require("./app/routes/envio.routes");
 const rutasConsignaciones = require("./app/routes/consignacion.routes");
-
-
+const rutasCatalogo = require("./app/routes/catalogo.routes");
+const rutasCarrito = require("./app/routes/carrito.routes");
 
 
 const { swaggerUi, swaggerSpec } = require("./swagger");
@@ -57,7 +57,8 @@ app.use("/api/cobros", rutasCobros);
 app.use("/api/cuentas-por-cobrar", rutasCuentasCobrar);
 app.use("/api/envios", rutasEnvios);
 app.use("/api/consignaciones", rutasConsignaciones);
-
+app.use("/api/catalogo", rutasCatalogo);
+app.use("/api/carrito", rutasCarrito);
 
 
 
