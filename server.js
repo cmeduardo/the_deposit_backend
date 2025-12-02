@@ -25,6 +25,8 @@ const rutasEnvios = require("./app/routes/envio.routes");
 const rutasConsignaciones = require("./app/routes/consignacion.routes");
 const rutasCatalogo = require("./app/routes/catalogo.routes");
 const rutasCarrito = require("./app/routes/carrito.routes");
+const rutasKpi = require("./app/routes/kpi.routes.js");
+
 
 
 const { swaggerUi, swaggerSpec } = require("./swagger");
@@ -59,7 +61,7 @@ app.use("/api/envios", rutasEnvios);
 app.use("/api/consignaciones", rutasConsignaciones);
 app.use("/api/catalogo", rutasCatalogo);
 app.use("/api/carrito", rutasCarrito);
-
+app.use("/api/kpi", rutasKpi);
 
 
 
