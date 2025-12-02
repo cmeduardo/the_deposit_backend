@@ -62,6 +62,8 @@ db.detalles_consignaciones = require("./detalle_consignacion.model.js")(sequeliz
 db.carritos_compras = require("./carrito_compra.model.js")(sequelize, Sequelize);
 db.items_carrito = require("./item_carrito.model.js")(sequelize, Sequelize);
 
+db.facturas = require("./factura.model.js")(sequelize, Sequelize);
+
 
 
 
@@ -385,6 +387,17 @@ db.presentaciones_productos.hasMany(db.items_carrito, {
 db.items_carrito.belongsTo(db.presentaciones_productos, {
   foreignKey: "id_presentacion_producto",
   as: "presentacion",
+});
+
+
+// Venta ↔ Factura (1 a 1)
+db.ventas.hasOne(db.facturas, {
+  foreignKey: "id_venta",
+  as: "factura",
+});
+db.facturas.belongsTo(db.ventas, {
+  foreignKey: "id_venta",
+  as: "venta",
 });
 
 
