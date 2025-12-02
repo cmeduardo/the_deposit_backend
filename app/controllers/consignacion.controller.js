@@ -6,7 +6,7 @@ const Ubicacion = db.ubicaciones_inventario;
 const Presentacion = db.presentaciones_productos;
 const Producto = db.productos;
 const InventarioSaldo = db.inventarios_saldos;
-const MovimientoInventario = db.movimientos_inventarios;
+const MovimientoInventario = db.movimientos_inventario;
 const { Op } = db.Sequelize;
 
 const getFechaHoy = () => new Date().toISOString().slice(0, 10);
