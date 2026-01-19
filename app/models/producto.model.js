@@ -15,6 +15,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      url_imagen: {
+        type: Sequelize.STRING(500),
+        allowNull: true,
+        comment: "URL pública de la imagen del producto",
+      },
       marca: {
         type: Sequelize.STRING(100),
         allowNull: true,

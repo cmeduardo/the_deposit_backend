@@ -80,10 +80,7 @@ db.sequelize
   .authenticate()
   .then(() => {
     console.log("Conectado a la base de datos");
-
-    // 👇 ESTA ES LA PARTE IMPORTANTE
-    // En desarrollo puedes usar { alter: true } para ajustar la tabla a los modelos
-    return db.sequelize.sync(); // o db.sequelize.sync({ alter: true })
+    return db.sequelize.sync(); 
   })
   .then(() => {
     console.log("Modelos sincronizados con la base de datos");

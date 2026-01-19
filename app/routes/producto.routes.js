@@ -18,26 +18,46 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *   schemas:
  *     Producto:
  *       type: object
+ *       required:
+ *         - nombre
+ *         - id_unidad_base
  *       properties:
  *         id:
  *           type: integer
+ *           example: 1
  *         nombre:
  *           type: string
+ *           example: "Coca Cola 600ml"
  *         descripcion:
  *           type: string
+ *           nullable: true
+ *           example: "Bebida gaseosa 600ml"
+ *         url_imagen:
+ *           type: string
+ *           nullable: true
+ *           example: "https://cdn.midominio.com/productos/coca600.png"
  *         marca:
  *           type: string
+ *           nullable: true
+ *           example: "Coca Cola"
  *         id_categoria:
  *           type: integer
+ *           nullable: true
+ *           example: 1
  *         id_unidad_base:
  *           type: integer
+ *           example: 1
  *         es_perecedero:
  *           type: boolean
+ *           example: false
  *         stock_minimo:
  *           type: integer
+ *           example: 10
  *         activo:
  *           type: boolean
+ *           example: true
  */
+
 
 /**
  * @swagger
@@ -51,14 +71,24 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         schema:
  *           type: boolean
  *         required: false
+ *         description: Filtrar por activo=true/false
  *       - in: query
  *         name: id_categoria
  *         schema:
  *           type: integer
  *         required: false
+ *         description: Filtrar por categoría
  *     responses:
  *       200:
  *         description: Lista de productos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Producto'
+ *       500:
+ *         description: Error interno del servidor
  */
 router.get("/", productoController.listarProductos);
 

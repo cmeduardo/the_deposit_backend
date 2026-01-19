@@ -22,6 +22,11 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         comment: "Ej. Fardo x24, Unidad suelta",
       },
+      url_imagen: {
+        type: Sequelize.STRING(500),
+        allowNull: true,
+        comment: "URL pública de la imagen de la presentación (puede diferir del producto)",
+      },
       codigo_barras: {
         type: Sequelize.STRING(100),
         allowNull: true,

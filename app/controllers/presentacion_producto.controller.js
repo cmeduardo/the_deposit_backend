@@ -15,7 +15,7 @@ const listarPresentaciones = async (req, res) => {
     const presentaciones = await PresentacionProducto.findAll({
       where,
       include: [
-        { model: Producto, as: "producto", attributes: ["id", "nombre"] },
+        { model: Producto, as: "producto", attributes: ["id", "nombre", "url_imagen"] },
         { model: Unidad, as: "unidad_venta", attributes: ["id", "codigo", "nombre"] },
       ],
     });
@@ -34,7 +34,7 @@ const obtenerPresentacionPorId = async (req, res) => {
 
     const presentacion = await PresentacionProducto.findByPk(id, {
       include: [
-        { model: Producto, as: "producto", attributes: ["id", "nombre"] },
+        { model: Producto, as: "producto", attributes: ["id", "nombre", "url_imagen"] },
         { model: Unidad, as: "unidad_venta", attributes: ["id", "codigo", "nombre"] },
       ],
     });
@@ -56,6 +56,7 @@ const crearPresentacion = async (req, res) => {
     const {
       id_producto,
       nombre,
+      url_imagen,
       codigo_barras,
       id_unidad_venta,
       unidades_por_unidad_venta,
@@ -94,6 +95,7 @@ const crearPresentacion = async (req, res) => {
     const presentacion = await PresentacionProducto.create({
       id_producto,
       nombre,
+      url_imagen: url_imagen || null,
       codigo_barras: codigo_barras || null,
       id_unidad_venta,
       unidades_por_unidad_venta:
@@ -121,6 +123,7 @@ const actualizarPresentacion = async (req, res) => {
     const {
       id_producto,
       nombre,
+      url_imagen,
       codigo_barras,
       id_unidad_venta,
       unidades_por_unidad_venta,
@@ -168,6 +171,7 @@ const actualizarPresentacion = async (req, res) => {
     }
 
     if (nombre !== undefined) presentacion.nombre = nombre;
+    if (url_imagen !== undefined) presentacion.url_imagen = url_imagen;
     if (unidades_por_unidad_venta !== undefined)
       presentacion.unidades_por_unidad_venta = unidades_por_unidad_venta;
     if (precio_venta_por_defecto !== undefined)

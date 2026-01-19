@@ -67,6 +67,7 @@ const crearProducto = async (req, res) => {
     const {
       nombre,
       descripcion,
+      url_imagen,
       marca,
       id_categoria,
       id_unidad_base,
@@ -96,6 +97,7 @@ const crearProducto = async (req, res) => {
     const producto = await Producto.create({
       nombre,
       descripcion,
+      url_imagen,
       marca,
       id_categoria: id_categoria || null,
       id_unidad_base,
@@ -121,6 +123,7 @@ const actualizarProducto = async (req, res) => {
     const {
       nombre,
       descripcion,
+      url_imagen,
       marca,
       id_categoria,
       id_unidad_base,
@@ -158,6 +161,7 @@ const actualizarProducto = async (req, res) => {
 
     if (nombre !== undefined) producto.nombre = nombre;
     if (descripcion !== undefined) producto.descripcion = descripcion;
+    if (url_imagen !== undefined) producto.url_imagen = url_imagen;
     if (marca !== undefined) producto.marca = marca;
     if (es_perecedero !== undefined) producto.es_perecedero = es_perecedero;
     if (stock_minimo !== undefined) producto.stock_minimo = stock_minimo;

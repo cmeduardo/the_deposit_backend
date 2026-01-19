@@ -18,28 +18,49 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *   schemas:
  *     PresentacionProducto:
  *       type: object
+ *       required:
+ *         - id_producto
+ *         - nombre
+ *         - id_unidad_venta
  *       properties:
  *         id:
  *           type: integer
+ *           example: 1
  *         id_producto:
  *           type: integer
+ *           example: 1
  *         nombre:
  *           type: string
+ *           example: "Fardo x24"
+ *         url_imagen:
+ *           type: string
+ *           nullable: true
+ *           example: "https://cdn.midominio.com/presentaciones/coca-fardo24.png"
  *         codigo_barras:
  *           type: string
+ *           nullable: true
+ *           example: "1234567890123"
  *         id_unidad_venta:
  *           type: integer
+ *           example: 2
  *         unidades_por_unidad_venta:
  *           type: integer
+ *           example: 24
  *         precio_venta_por_defecto:
  *           type: number
  *           format: float
+ *           nullable: true
+ *           example: 150.00
  *         precio_minimo:
  *           type: number
  *           format: float
+ *           nullable: true
+ *           example: 140.00
  *         activo:
  *           type: boolean
+ *           example: true
  */
+
 
 /**
  * @swagger
@@ -52,13 +73,23 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         name: id_producto
  *         schema:
  *           type: integer
+ *         description: Filtrar por producto
  *       - in: query
  *         name: activo
  *         schema:
  *           type: boolean
+ *         description: Filtrar por estado activo
  *     responses:
  *       200:
  *         description: Lista de presentaciones
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PresentacionProducto'
+ *       500:
+ *         description: Error interno del servidor
  */
 router.get("/", presentacionController.listarPresentaciones);
 

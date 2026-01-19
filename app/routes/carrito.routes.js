@@ -9,7 +9,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  * @swagger
  * tags:
  *   name: Carrito
- *   description: Carrito de compras de la tienda en línea
+ *   description: Carrito de compras (requiere autenticación)
  */
 
 /**
@@ -24,23 +24,135 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *       properties:
  *         id_presentacion_producto:
  *           type: integer
+ *           example: 1
  *         cantidad_unidad_venta:
  *           type: number
+ *           format: float
+ *           example: 2
+ *           description: "Cantidad en unidad de venta de la presentación. Puede ser decimal si el negocio lo permite."
  *         notas:
  *           type: string
+ *           nullable: true
+ *           example: "Sin hielo"
+ *
+ *     ItemCarrito:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 10
+ *         id_carrito:
+ *           type: integer
+ *           example: 1
+ *         id_presentacion_producto:
+ *           type: integer
+ *           example: 1
+ *         cantidad_unidad_venta:
+ *           type: string
+ *           example: "2.000"
+ *           description: "Se guarda como DECIMAL(12,3); puede venir como string desde la BD."
+ *         precio_unitario:
+ *           type: string
+ *           example: "7.00"
+ *           description: "Snapshot del precio al momento de agregar al carrito."
+ *         subtotal_linea:
+ *           type: string
+ *           example: "14.00"
+ *         notas:
+ *           type: string
+ *           nullable: true
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     CarritoCompra:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 1
+ *         id_usuario_cliente:
+ *           type: integer
+ *           example: 1
+ *         estado:
+ *           type: string
+ *           enum: [ACTIVO, CONVERTIDO, CANCELADO]
+ *           example: ACTIVO
+ *         notas:
+ *           type: string
+ *           nullable: true
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: "#/components/schemas/ItemCarrito"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     ConfirmarCarritoInput:
+ *       type: object
+ *       required:
+ *         - id_ubicacion_salida
+ *       properties:
+ *         id_ubicacion_salida:
+ *           type: integer
+ *           example: 1
+ *         cargo_envio:
+ *           type: number
+ *           format: float
+ *           nullable: true
+ *           example: 15
+ *         descuento_total:
+ *           type: number
+ *           format: float
+ *           nullable: true
+ *           example: 0
+ *         notas_cliente:
+ *           type: string
+ *           nullable: true
+ *           example: "Entregar en tienda"
+ *
+ *     ErrorRespuesta:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *           example: "Error interno del servidor"
  */
 
 /**
  * @swagger
  * /api/carrito/mi-carrito:
  *   get:
- *     summary: Obtener el carrito activo del usuario autenticado
+ *     summary: Obtener el carrito ACTIVO del usuario autenticado (crea uno si no existe)
  *     tags: [Carrito]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Carrito actual con sus items
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/CarritoCompra"
+ *       401:
+ *         description: No autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
+ *       403:
+ *         description: Sin permisos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
  */
 router.get(
   "/mi-carrito",
@@ -53,7 +165,7 @@ router.get(
  * @swagger
  * /api/carrito/items:
  *   post:
- *     summary: Agregar un item al carrito del usuario
+ *     summary: Agregar un item al carrito (snapshot de precio + subtotal calculado)
  *     tags: [Carrito]
  *     security:
  *       - bearerAuth: []
@@ -62,10 +174,32 @@ router.get(
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/ItemCarritoInput'
+ *             $ref: "#/components/schemas/ItemCarritoInput"
  *     responses:
  *       201:
  *         description: Item agregado al carrito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: "Item agregado correctamente"
+ *                 item:
+ *                   $ref: "#/components/schemas/ItemCarrito"
+ *       400:
+ *         description: Datos inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
+ *       401:
+ *         description: No autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
  */
 router.post(
   "/items",
@@ -88,6 +222,7 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
+ *         example: 10
  *     requestBody:
  *       required: false
  *       content:
@@ -97,11 +232,30 @@ router.post(
  *             properties:
  *               cantidad_unidad_venta:
  *                 type: number
+ *                 format: float
+ *                 example: 3
  *               notas:
  *                 type: string
+ *                 example: "Cambiar por presentación unidad"
  *     responses:
  *       200:
  *         description: Item actualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: "Item actualizado correctamente"
+ *                 item:
+ *                   $ref: "#/components/schemas/ItemCarrito"
+ *       404:
+ *         description: Item no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
  */
 router.patch(
   "/items/:id",
@@ -124,9 +278,24 @@ router.patch(
  *         required: true
  *         schema:
  *           type: integer
+ *         example: 10
  *     responses:
  *       200:
  *         description: Item eliminado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: "Item eliminado correctamente"
+ *       404:
+ *         description: Item no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
  */
 router.delete(
   "/items/:id",
@@ -139,13 +308,21 @@ router.delete(
  * @swagger
  * /api/carrito/mi-carrito/items:
  *   delete:
- *     summary: Vaciar el carrito del usuario
+ *     summary: Vaciar el carrito del usuario (elimina todos los items)
  *     tags: [Carrito]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Carrito vaciado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: "Carrito vaciado correctamente"
  */
 router.delete(
   "/mi-carrito/items",
@@ -158,7 +335,7 @@ router.delete(
  * @swagger
  * /api/carrito/confirmar:
  *   post:
- *     summary: Confirmar el carrito y generar un pedido con reserva de stock
+ *     summary: Confirmar el carrito y generar un pedido (reserva stock + convierte carrito)
  *     tags: [Carrito]
  *     security:
  *       - bearerAuth: []
@@ -167,21 +344,33 @@ router.delete(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - id_ubicacion_salida
- *             properties:
- *               id_ubicacion_salida:
- *                 type: integer
- *               cargo_envio:
- *                 type: number
- *               descuento_total:
- *                 type: number
- *               notas_cliente:
- *                 type: string
+ *             $ref: "#/components/schemas/ConfirmarCarritoInput"
  *     responses:
  *       201:
  *         description: Pedido creado desde el carrito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: "Pedido creado desde el carrito"
+ *                 pedido:
+ *                   type: object
+ *                   description: "Objeto Pedido creado (estructura depende del modelo Pedido)."
+ *       400:
+ *         description: Carrito vacío o datos inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
+ *       409:
+ *         description: Stock insuficiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorRespuesta"
  */
 router.post(
   "/confirmar",
