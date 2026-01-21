@@ -9,13 +9,23 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  * @swagger
  * tags:
  *   name: UbicacionesInventario
- *   description: Gestión de ubicaciones de inventario
+ *   description: Gestión de ubicaciones de inventario (almacenes, consignación, etc.)
  */
 
 /**
  * @swagger
  * components:
  *   schemas:
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *
+ *     UbicacionInventarioTipo:
+ *       type: string
+ *       enum: [ALMACEN, CONSIGNACION, OTRO]
+ *
  *     UbicacionInventario:
  *       type: object
  *       properties:
@@ -24,12 +34,28 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         nombre:
  *           type: string
  *         tipo:
- *           type: string
- *           enum: [ALMACEN, CONSIGNACION, OTRO]
+ *           $ref: '#/components/schemas/UbicacionInventarioTipo'
  *         descripcion:
  *           type: string
+ *           nullable: true
  *         activo:
  *           type: boolean
+ *
+ *     UbicacionInventarioCreateInput:
+ *       type: object
+ *       required: [nombre, tipo]
+ *       properties:
+ *         nombre:
+ *           type: string
+ *           example: "Bodega Central"
+ *         tipo:
+ *           $ref: '#/components/schemas/UbicacionInventarioTipo'
+ *         descripcion:
+ *           type: string
+ *           example: "Ubicación principal"
+ *         activo:
+ *           type: boolean
+ *           example: true
  */
 
 /**
@@ -43,9 +69,18 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         name: activo
  *         schema:
  *           type: boolean
+ *         description: true|false
  *     responses:
  *       200:
  *         description: Lista de ubicaciones
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/UbicacionInventario'
+ *       500:
+ *         description: Error interno
  */
 router.get("/", ubicacionController.listarUbicaciones);
 
@@ -64,8 +99,18 @@ router.get("/", ubicacionController.listarUbicaciones);
  *     responses:
  *       200:
  *         description: Ubicación encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UbicacionInventario'
  *       404:
  *         description: No encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno
  */
 router.get("/:id", ubicacionController.obtenerUbicacionPorId);
 
@@ -82,10 +127,18 @@ router.get("/:id", ubicacionController.obtenerUbicacionPorId);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UbicacionInventario'
+ *             $ref: '#/components/schemas/UbicacionInventarioCreateInput'
  *     responses:
  *       201:
  *         description: Ubicación creada
+ *       400:
+ *         description: Validación (faltan campos / tipo inválido)
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Sin permisos (solo ADMIN)
+ *       500:
+ *         description: Error interno
  */
 router.post(
   "/",
@@ -119,6 +172,14 @@ router.post(
  *         description: Ubicación actualizada
  *       404:
  *         description: No encontrada
+ *       400:
+ *         description: Validación
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Sin permisos (solo ADMIN)
+ *       500:
+ *         description: Error interno
  */
 router.patch(
   "/:id",

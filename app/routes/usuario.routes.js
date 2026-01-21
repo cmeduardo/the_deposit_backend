@@ -21,67 +21,98 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *       properties:
  *         id:
  *           type: integer
+ *           example: 10
  *         nombre:
  *           type: string
+ *           example: "Vendedor 1"
  *         correo:
  *           type: string
+ *           format: email
+ *           example: "vendedor1@deposito.com"
  *         rol:
  *           type: string
  *           enum: [ADMINISTRADOR, VENDEDOR, CLIENTE]
+ *           example: "VENDEDOR"
  *         activo:
  *           type: boolean
+ *           example: true
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           nullable: true
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *           nullable: true
+ *
  *     CrearUsuarioInput:
  *       type: object
- *       required:
- *         - nombre
- *         - correo
- *         - contrasena
- *         - rol
+ *       required: [nombre, correo, contrasena, rol]
  *       properties:
  *         nombre:
  *           type: string
- *           example: Vendedor 1
+ *           example: "Vendedor 1"
  *         correo:
  *           type: string
- *           example: vendedor1@deposito.com
+ *           format: email
+ *           example: "vendedor1@deposito.com"
  *         contrasena:
  *           type: string
+ *           minLength: 8
  *           example: "PasswordSegura123"
  *         rol:
  *           type: string
  *           enum: [ADMINISTRADOR, VENDEDOR, CLIENTE]
- *           example: VENDEDOR
+ *           example: "VENDEDOR"
  *         activo:
  *           type: boolean
  *           example: true
+ *
  *     ActualizarUsuarioInput:
  *       type: object
  *       properties:
  *         nombre:
  *           type: string
+ *           example: "Vendedor 1 (editado)"
  *         correo:
  *           type: string
+ *           format: email
+ *           example: "vendedor1@deposito.com"
  *         contrasena:
  *           type: string
+ *           minLength: 8
+ *           example: "NuevaPass123"
  *         rol:
  *           type: string
  *           enum: [ADMINISTRADOR, VENDEDOR, CLIENTE]
+ *           example: "VENDEDOR"
  *         activo:
  *           type: boolean
+ *           example: true
+ *
  *     CambiarEstadoUsuarioInput:
  *       type: object
- *       required:
- *         - activo
+ *       required: [activo]
  *       properties:
  *         activo:
  *           type: boolean
  *           example: false
+ *
+ *     ApiError:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *           example: "Error interno del servidor"
+ *
+ *     ApiMensajeUsuario:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *           example: "Usuario creado correctamente"
+ *         usuario:
+ *           $ref: '#/components/schemas/UsuarioListado'
  */
 
 /**
@@ -106,6 +137,12 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         description: No autenticado
  *       403:
  *         description: Sin permisos
+ *       500:
+ *         description: Error interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.get(
   "/",
@@ -125,10 +162,10 @@ router.get(
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
- *         description: ID del usuario
+ *         example: 10
  *     responses:
  *       200:
  *         description: Usuario encontrado
@@ -142,6 +179,18 @@ router.get(
  *         description: Sin permisos
  *       404:
  *         description: Usuario no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *             example:
+ *               mensaje: "Usuario no encontrado"
+ *       500:
+ *         description: Error interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.get(
   "/:id",
@@ -165,17 +214,46 @@ router.get(
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CrearUsuarioInput'
+ *           examples:
+ *             crearVendedor:
+ *               summary: Crear vendedor
+ *               value:
+ *                 nombre: "Vendedor 1"
+ *                 correo: "vendedor1@deposito.com"
+ *                 contrasena: "PasswordSegura123"
+ *                 rol: "VENDEDOR"
+ *                 activo: true
  *     responses:
  *       201:
  *         description: Usuario creado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiMensajeUsuario'
  *       400:
  *         description: Datos inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  *       401:
  *         description: No autenticado
  *       403:
  *         description: Sin permisos
  *       409:
  *         description: Correo en uso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *             example:
+ *               mensaje: "Ya existe un usuario con ese correo"
+ *       500:
+ *         description: Error interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.post(
   "/",
@@ -195,27 +273,57 @@ router.post(
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
- *         description: ID del usuario
+ *         example: 10
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/ActualizarUsuarioInput'
+ *           examples:
+ *             actualizarRol:
+ *               summary: Cambiar rol/estado
+ *               value:
+ *                 rol: "ADMINISTRADOR"
+ *                 activo: true
  *     responses:
  *       200:
  *         description: Usuario actualizado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiMensajeUsuario'
  *       400:
  *         description: Datos inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  *       401:
  *         description: No autenticado
  *       403:
  *         description: Sin permisos
  *       404:
  *         description: Usuario no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       409:
+ *         description: Correo en uso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       500:
+ *         description: Error interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.patch(
   "/:id",
@@ -235,27 +343,50 @@ router.patch(
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
- *         description: ID del usuario
+ *         example: 10
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CambiarEstadoUsuarioInput'
+ *           examples:
+ *             desactivar:
+ *               summary: Desactivar usuario
+ *               value:
+ *                 activo: false
  *     responses:
  *       200:
  *         description: Estado actualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiMensajeUsuario'
  *       400:
  *         description: Datos inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  *       401:
  *         description: No autenticado
  *       403:
  *         description: Sin permisos
  *       404:
  *         description: Usuario no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       500:
+ *         description: Error interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.patch(
   "/:id/estado",

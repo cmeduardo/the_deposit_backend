@@ -9,76 +9,90 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  * @swagger
  * tags:
  *   name: PresentacionesProductos
- *   description: Gestión de presentaciones de productos (SKUs)
+ *   description: Gestión de presentaciones (SKU) de productos
  */
 
 /**
  * @swagger
  * components:
  *   schemas:
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *
  *     PresentacionProducto:
  *       type: object
- *       required:
- *         - id_producto
- *         - nombre
- *         - id_unidad_venta
  *       properties:
  *         id:
  *           type: integer
- *           example: 1
  *         id_producto:
  *           type: integer
- *           example: 1
  *         nombre:
  *           type: string
- *           example: "Fardo x24"
  *         url_imagen:
  *           type: string
  *           nullable: true
- *           example: "https://cdn.midominio.com/presentaciones/coca-fardo24.png"
  *         codigo_barras:
  *           type: string
  *           nullable: true
- *           example: "1234567890123"
  *         id_unidad_venta:
  *           type: integer
- *           example: 2
+ *           nullable: true
  *         unidades_por_unidad_venta:
- *           type: integer
- *           example: 24
+ *           type: number
+ *           example: 1
  *         precio_venta_por_defecto:
  *           type: number
- *           format: float
  *           nullable: true
- *           example: 150.00
  *         precio_minimo:
  *           type: number
- *           format: float
  *           nullable: true
- *           example: 140.00
  *         activo:
  *           type: boolean
- *           example: true
+ *
+ *     PresentacionProductoCreateInput:
+ *       type: object
+ *       required: [id_producto, nombre]
+ *       properties:
+ *         id_producto:
+ *           type: integer
+ *         nombre:
+ *           type: string
+ *         url_imagen:
+ *           type: string
+ *         codigo_barras:
+ *           type: string
+ *         id_unidad_venta:
+ *           type: integer
+ *         unidades_por_unidad_venta:
+ *           type: number
+ *         precio_venta_por_defecto:
+ *           type: number
+ *         precio_minimo:
+ *           type: number
+ *         activo:
+ *           type: boolean
  */
-
 
 /**
  * @swagger
  * /api/presentaciones-productos:
  *   get:
- *     summary: Listar presentaciones de productos
+ *     summary: Listar presentaciones (con filtros opcionales)
  *     tags: [PresentacionesProductos]
  *     parameters:
  *       - in: query
  *         name: id_producto
  *         schema:
  *           type: integer
- *         description: Filtrar por producto
+ *         description: Filtra por producto
  *       - in: query
  *         name: activo
  *         schema:
  *           type: boolean
- *         description: Filtrar por estado activo
+ *         description: true|false
  *     responses:
  *       200:
  *         description: Lista de presentaciones
@@ -89,7 +103,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: '#/components/schemas/PresentacionProducto'
  *       500:
- *         description: Error interno del servidor
+ *         description: Error interno
  */
 router.get("/", presentacionController.listarPresentaciones);
 
@@ -108,8 +122,18 @@ router.get("/", presentacionController.listarPresentaciones);
  *     responses:
  *       200:
  *         description: Presentación encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PresentacionProducto'
  *       404:
  *         description: No encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno
  */
 router.get("/:id", presentacionController.obtenerPresentacionPorId);
 
@@ -117,7 +141,7 @@ router.get("/:id", presentacionController.obtenerPresentacionPorId);
  * @swagger
  * /api/presentaciones-productos:
  *   post:
- *     summary: Crear presentación de producto
+ *     summary: Crear presentación
  *     tags: [PresentacionesProductos]
  *     security:
  *       - bearerAuth: []
@@ -126,15 +150,23 @@ router.get("/:id", presentacionController.obtenerPresentacionPorId);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/PresentacionProducto'
+ *             $ref: '#/components/schemas/PresentacionProductoCreateInput'
  *     responses:
  *       201:
- *         description: Presentación creada
+ *         description: Presentación creada correctamente
+ *       400:
+ *         description: Validación (faltan datos o producto no existe)
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Sin permisos (solo ADMIN)
+ *       500:
+ *         description: Error interno
  */
 router.post(
   "/",
   autenticacionMiddleware,
-  rolMiddleware("ADMINISTRADOR", "VENDEDOR"),
+  rolMiddleware("ADMINISTRADOR"),
   presentacionController.crearPresentacion
 );
 
@@ -142,7 +174,7 @@ router.post(
  * @swagger
  * /api/presentaciones-productos/{id}:
  *   patch:
- *     summary: Actualizar presentación de producto
+ *     summary: Actualizar presentación
  *     tags: [PresentacionesProductos]
  *     security:
  *       - bearerAuth: []
@@ -163,11 +195,17 @@ router.post(
  *         description: Presentación actualizada
  *       404:
  *         description: No encontrada
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Sin permisos (solo ADMIN)
+ *       500:
+ *         description: Error interno
  */
 router.patch(
   "/:id",
   autenticacionMiddleware,
-  rolMiddleware("ADMINISTRADOR", "VENDEDOR"),
+  rolMiddleware("ADMINISTRADOR"),
   presentacionController.actualizarPresentacion
 );
 

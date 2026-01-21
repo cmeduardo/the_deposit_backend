@@ -9,75 +9,93 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  * @swagger
  * tags:
  *   name: Productos
- *   description: Gestión de productos
+ *   description: Gestión de productos (incluye creación y edición)
  */
 
 /**
  * @swagger
  * components:
  *   schemas:
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *
  *     Producto:
  *       type: object
- *       required:
- *         - nombre
- *         - id_unidad_base
  *       properties:
  *         id:
  *           type: integer
- *           example: 1
  *         nombre:
  *           type: string
- *           example: "Coca Cola 600ml"
  *         descripcion:
  *           type: string
  *           nullable: true
- *           example: "Bebida gaseosa 600ml"
- *         url_imagen:
- *           type: string
- *           nullable: true
- *           example: "https://cdn.midominio.com/productos/coca600.png"
  *         marca:
  *           type: string
  *           nullable: true
- *           example: "Coca Cola"
+ *         url_imagen:
+ *           type: string
+ *           nullable: true
  *         id_categoria:
  *           type: integer
  *           nullable: true
- *           example: 1
  *         id_unidad_base:
  *           type: integer
- *           example: 1
+ *           nullable: true
  *         es_perecedero:
  *           type: boolean
- *           example: false
  *         stock_minimo:
  *           type: integer
- *           example: 10
  *         activo:
  *           type: boolean
- *           example: true
+ *
+ *     ProductoCreateInput:
+ *       type: object
+ *       required: [nombre]
+ *       properties:
+ *         nombre:
+ *           type: string
+ *         descripcion:
+ *           type: string
+ *         marca:
+ *           type: string
+ *         url_imagen:
+ *           type: string
+ *         id_categoria:
+ *           type: integer
+ *         id_unidad_base:
+ *           type: integer
+ *         es_perecedero:
+ *           type: boolean
+ *         stock_minimo:
+ *           type: integer
+ *         activo:
+ *           type: boolean
  */
-
 
 /**
  * @swagger
  * /api/productos:
  *   get:
- *     summary: Listar productos
+ *     summary: Listar productos (filtros opcionales)
  *     tags: [Productos]
  *     parameters:
  *       - in: query
  *         name: activo
  *         schema:
  *           type: boolean
- *         required: false
- *         description: Filtrar por activo=true/false
+ *         description: true|false
  *       - in: query
  *         name: id_categoria
  *         schema:
  *           type: integer
- *         required: false
- *         description: Filtrar por categoría
+ *       - in: query
+ *         name: texto
+ *         schema:
+ *           type: string
+ *         description: Busca por nombre/descripcion/marca (si lo implementaste en controller)
  *     responses:
  *       200:
  *         description: Lista de productos
@@ -88,7 +106,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: '#/components/schemas/Producto'
  *       500:
- *         description: Error interno del servidor
+ *         description: Error interno
  */
 router.get("/", productoController.listarProductos);
 
@@ -96,7 +114,7 @@ router.get("/", productoController.listarProductos);
  * @swagger
  * /api/productos/{id}:
  *   get:
- *     summary: Obtener un producto por ID
+ *     summary: Obtener producto por ID
  *     tags: [Productos]
  *     parameters:
  *       - in: path
@@ -107,8 +125,14 @@ router.get("/", productoController.listarProductos);
  *     responses:
  *       200:
  *         description: Producto encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Producto'
  *       404:
  *         description: No encontrado
+ *       500:
+ *         description: Error interno
  */
 router.get("/:id", productoController.obtenerProductoPorId);
 
@@ -125,15 +149,25 @@ router.get("/:id", productoController.obtenerProductoPorId);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Producto'
+ *             $ref: '#/components/schemas/ProductoCreateInput'
  *     responses:
  *       201:
- *         description: Producto creado
+ *         description: Producto creado correctamente
+ *       400:
+ *         description: Validación (nombre requerido / ids inválidos)
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Sin permisos (solo ADMIN)
+ *       409:
+ *         description: Conflicto (por ejemplo nombre duplicado si lo validas)
+ *       500:
+ *         description: Error interno
  */
 router.post(
   "/",
   autenticacionMiddleware,
-  rolMiddleware("ADMINISTRADOR", "VENDEDOR"),
+  rolMiddleware("ADMINISTRADOR"),
   productoController.crearProducto
 );
 
@@ -159,14 +193,24 @@ router.post(
  *             $ref: '#/components/schemas/Producto'
  *     responses:
  *       200:
- *         description: Producto actualizado
+ *         description: Producto actualizado correctamente
  *       404:
  *         description: No encontrado
+ *       400:
+ *         description: Validación
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Sin permisos (solo ADMIN)
+ *       409:
+ *         description: Conflicto (por ejemplo nombre duplicado)
+ *       500:
+ *         description: Error interno
  */
 router.patch(
   "/:id",
   autenticacionMiddleware,
-  rolMiddleware("ADMINISTRADOR", "VENDEDOR"),
+  rolMiddleware("ADMINISTRADOR"),
   productoController.actualizarProducto
 );
 

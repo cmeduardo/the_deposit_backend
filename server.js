@@ -27,6 +27,7 @@ const rutasCatalogo = require("./app/routes/catalogo.routes");
 const rutasCarrito = require("./app/routes/carrito.routes");
 const rutasKpi = require("./app/routes/kpi.routes.js");
 const rutasFacturas = require("./app/routes/factura.routes");
+const rutasHealth = require("./app/routes/health.routes");
 
 
 const { swaggerUi, swaggerSpec } = require("./swagger");
@@ -63,6 +64,7 @@ app.use("/api/catalogo", rutasCatalogo);
 app.use("/api/carrito", rutasCarrito);
 app.use("/api/kpi", rutasKpi);
 app.use("/api/facturas", rutasFacturas);
+app.use("/api/health", rutasHealth);
 
 
 // Swagger
