@@ -15,19 +15,17 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *       example:
- *         mensaje: "Error interno del servidor"
+ *     PedidoEstado:
+ *       type: string
+ *       enum: [PENDIENTE, CANCELADO, COMPLETADO]
+ *
+ *     PedidoFuente:
+ *       type: string
+ *       enum: [ONLINE, ADMIN, OTRO, TIENDA_EN_LINEA, DESDE_CARRITO]
  *
  *     PedidoDetalleInput:
  *       type: object
- *       required:
- *         - id_presentacion_producto
- *         - cantidad_unidad_venta
+ *       required: [id_presentacion_producto, cantidad_unidad_venta]
  *       properties:
  *         id_presentacion_producto:
  *           type: integer
@@ -37,87 +35,175 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *           example: 2
  *         precio_unitario:
  *           type: number
+ *           nullable: true
+ *           description: |
+ *             Solo ADMINISTRADOR/VENDEDOR pueden enviar precio_unitario.
+ *             Si no se envía, se usa precio_venta_por_defecto de la presentación.
  *           example: 7.5
- *         notas:
- *           type: string
- *           example: "Entregar en la tarde"
  *
  *     PedidoCreateInput:
  *       type: object
- *       required:
- *         - detalles
+ *       required: [id_ubicacion_salida, detalles]
  *       properties:
  *         id_usuario_cliente:
  *           type: integer
  *           nullable: true
- *           description: Si se omite, el pedido queda sin cliente asociado (según tu lógica).
+ *           description: |
+ *             Si se omite y el rol del token es CLIENTE, se usa req.usuario.id.
  *           example: 5
- *         fecha_pedido:
- *           type: string
- *           format: date
+ *         id_ubicacion_salida:
+ *           type: integer
+ *           description: Ubicación desde la cual se reserva stock.
+ *           example: 2
+ *         fuente:
+ *           $ref: '#/components/schemas/PedidoFuente'
+ *         cargo_envio:
+ *           type: number
  *           nullable: true
- *           description: Si se omite, se usa la fecha actual.
- *           example: "2026-01-20"
- *         notas:
+ *           example: 0
+ *         notas_cliente:
  *           type: string
  *           nullable: true
- *           example: "Pedido para entrega a domicilio"
+ *           example: "Entregar rápido"
  *         detalles:
  *           type: array
  *           minItems: 1
  *           items:
  *             $ref: '#/components/schemas/PedidoDetalleInput'
  *
- *     PedidoEstado:
- *       type: string
- *       enum: [PENDIENTE, CANCELADO]
+ *     ProductoResumen:
+ *       type: object
+ *       nullable: true
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 1
+ *         nombre:
+ *           type: string
+ *           example: "Coca Cola 600ml"
+ *
+ *     PresentacionResumen:
+ *       type: object
+ *       nullable: true
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 10
+ *         nombre:
+ *           type: string
+ *           example: "Fardo x24"
+ *         unidades_por_unidad_venta:
+ *           type: number
+ *           example: 24
+ *         precio_venta_por_defecto:
+ *           type: number
+ *           example: 7.5
+ *         producto:
+ *           $ref: '#/components/schemas/ProductoResumen'
  *
  *     PedidoDetalle:
  *       type: object
  *       properties:
  *         id:
  *           type: integer
+ *           example: 1
  *         id_pedido:
  *           type: integer
+ *           example: 10
  *         id_presentacion_producto:
  *           type: integer
+ *           example: 10
  *         cantidad_unidad_venta:
  *           type: number
+ *           example: 2
+ *         cantidad_unidad_base:
+ *           type: number
+ *           example: 48
  *         precio_unitario:
  *           type: number
+ *           example: 7.5
+ *         origen_precio:
+ *           type: string
+ *           enum: [SISTEMA, MANUAL]
+ *           example: "SISTEMA"
  *         subtotal_linea:
  *           type: number
- *         notas:
+ *           example: 15
+ *         presentacion:
+ *           $ref: '#/components/schemas/PresentacionResumen'
+ *
+ *     UsuarioResumen:
+ *       type: object
+ *       nullable: true
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 5
+ *         nombre:
  *           type: string
+ *           example: "Juan Pérez"
+ *         correo:
+ *           type: string
+ *           example: "juan@correo.com"
+ *
+ *     UbicacionResumen:
+ *       type: object
+ *       nullable: true
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 2
+ *         nombre:
+ *           type: string
+ *           example: "Bodega Central"
+ *         tipo:
+ *           type: string
+ *           nullable: true
+ *           example: "BODEGA"
  *
  *     Pedido:
  *       type: object
  *       properties:
  *         id:
  *           type: integer
+ *           example: 10
  *         id_usuario_cliente:
  *           type: integer
  *           nullable: true
+ *           example: 5
+ *         id_ubicacion_salida:
+ *           type: integer
+ *           example: 2
+ *         fuente:
+ *           $ref: '#/components/schemas/PedidoFuente'
+ *         estado:
+ *           $ref: '#/components/schemas/PedidoEstado'
  *         fecha_pedido:
  *           type: string
  *           format: date
- *         estado:
- *           $ref: '#/components/schemas/PedidoEstado'
- *         subtotal:
+ *           example: "2026-01-21"
+ *         subtotal_productos:
  *           type: number
- *         notas:
+ *           example: 150
+ *         cargo_envio:
+ *           type: number
+ *           example: 0
+ *         descuento_total:
+ *           type: number
+ *           example: 0
+ *         total_general:
+ *           type: number
+ *           example: 150
+ *         notas_cliente:
+ *           type: string
+ *           nullable: true
+ *         notas_internas:
  *           type: string
  *           nullable: true
  *         cliente_usuario:
- *           type: object
- *           nullable: true
- *           properties:
- *             id:
- *               type: integer
- *             nombre:
- *               type: string
- *             correo:
- *               type: string
+ *           $ref: '#/components/schemas/UsuarioResumen'
+ *         ubicacion_salida:
+ *           $ref: '#/components/schemas/UbicacionResumen'
  *         detalles:
  *           type: array
  *           items:
@@ -128,13 +214,16 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  * @swagger
  * /api/pedidos:
  *   get:
- *     summary: Listar pedidos con filtros opcionales
+ *     summary: Listar pedidos con filtros opcionales (incluye detalles)
  *     description: |
- *       Devuelve pedidos con detalles y relaciones. Requiere autenticación.
+ *       Devuelve pedidos con:
+ *       - cliente_usuario (id, nombre, correo)
+ *       - ubicacion_salida (id, nombre, tipo)
+ *       - detalles (con presentacion y producto)
  *
- *       **Permisos (según tu lógica de negocio):**
+ *       Permisos:
  *       - ADMINISTRADOR / VENDEDOR: ve todos
- *       - CLIENTE: ve solo sus pedidos
+ *       - CLIENTE: ve solo sus pedidos (ignora id_cliente)
  *     tags: [Pedidos]
  *     security:
  *       - bearerAuth: []
@@ -148,17 +237,9 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *         name: id_cliente
  *         schema:
  *           type: integer
- *         description: Filtrar por id de cliente (solo útil para roles internos)
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
+ *         description: Filtrar por id de cliente (solo roles internos)
+ *       - $ref: '#/components/parameters/FechaDesdeQuery'
+ *       - $ref: '#/components/parameters/FechaHastaQuery'
  *     responses:
  *       200:
  *         description: Lista de pedidos
@@ -169,17 +250,9 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *               items:
  *                 $ref: '#/components/schemas/Pedido'
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get("/", autenticacionMiddleware, pedidoController.listarPedidos);
 
@@ -189,16 +262,18 @@ router.get("/", autenticacionMiddleware, pedidoController.listarPedidos);
  *   get:
  *     summary: Obtener pedido por ID (incluye detalles)
  *     description: |
- *       Requiere autenticación. Un CLIENTE solo debe poder ver pedidos propios (según tu lógica).
+ *       Incluye:
+ *       - cliente_usuario
+ *       - ubicacion_salida
+ *       - detalles (con presentacion y producto)
+ *       - venta (si existe)
+ *
+ *       Regla: un CLIENTE solo puede ver pedidos propios.
  *     tags: [Pedidos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - $ref: '#/components/parameters/IdPathParam'
  *     responses:
  *       200:
  *         description: Pedido encontrado
@@ -206,18 +281,14 @@ router.get("/", autenticacionMiddleware, pedidoController.listarPedidos);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Pedido'
- *       404:
- *         description: Pedido no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               mensaje: "Pedido no encontrado"
  *       401:
- *         description: No autenticado
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  *       500:
- *         description: Error interno
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get("/:id", autenticacionMiddleware, pedidoController.obtenerPedidoPorId);
 
@@ -225,11 +296,23 @@ router.get("/:id", autenticacionMiddleware, pedidoController.obtenerPedidoPorId)
  * @swagger
  * /api/pedidos:
  *   post:
- *     summary: Crear un pedido
+ *     summary: Crear un pedido (reserva stock)
  *     description: |
- *       Crea un pedido con sus detalles.
- *       - Si `fecha_pedido` se omite, se asigna la fecha actual.
- *       - Debe incluir al menos un detalle.
+ *       Crea un pedido y reserva inventario (cantidad_reservada).
+ *
+ *       Reglas:
+ *       - Obligatorio: id_ubicacion_salida
+ *       - Debe incluir al menos un detalle
+ *       - Valida que todas las presentaciones existan
+ *       - Verifica stock libre (disponible - reservada) en la ubicación
+ *       - Define cliente:
+ *         - si rol=CLIENTE y no envía id_usuario_cliente => usa req.usuario.id
+ *       - fuente default:
+ *         - CLIENTE => ONLINE
+ *         - otros => ADMIN
+ *       - precio_unitario:
+ *         - solo ADMINISTRADOR/VENDEDOR puede enviarlo (MANUAL)
+ *         - si no se envía => usa precio_venta_por_defecto (SISTEMA)
  *     tags: [Pedidos]
  *     security:
  *       - bearerAuth: []
@@ -240,21 +323,22 @@ router.get("/:id", autenticacionMiddleware, pedidoController.obtenerPedidoPorId)
  *           schema:
  *             $ref: '#/components/schemas/PedidoCreateInput'
  *           examples:
- *             ejemplo1:
- *               summary: Pedido con 2 líneas
+ *             ejemplo:
  *               value:
  *                 id_usuario_cliente: 5
- *                 notas: "Entregar rápido"
+ *                 id_ubicacion_salida: 2
+ *                 fuente: "ADMIN"
+ *                 cargo_envio: 0
+ *                 notas_cliente: "Entregar rápido"
  *                 detalles:
  *                   - id_presentacion_producto: 10
  *                     cantidad_unidad_venta: 2
- *                     precio_unitario: 7.5
  *                   - id_presentacion_producto: 12
  *                     cantidad_unidad_venta: 1
  *                     precio_unitario: 15
  *     responses:
  *       201:
- *         description: Pedido creado correctamente
+ *         description: Pedido creado y stock reservado
  *         content:
  *           application/json:
  *             schema:
@@ -262,18 +346,15 @@ router.get("/:id", autenticacionMiddleware, pedidoController.obtenerPedidoPorId)
  *               properties:
  *                 mensaje:
  *                   type: string
+ *                   example: "Pedido creado y stock reservado correctamente"
  *                 pedido:
  *                   $ref: '#/components/schemas/Pedido'
  *       400:
- *         description: Error de validación (faltan datos / detalles vacíos / presentaciones inexistentes)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         $ref: '#/components/responses/ValidationError'
  *       401:
- *         description: No autenticado
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
- *         description: Error interno
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post("/", autenticacionMiddleware, pedidoController.crearPedido);
 
@@ -281,19 +362,17 @@ router.post("/", autenticacionMiddleware, pedidoController.crearPedido);
  * @swagger
  * /api/pedidos/{id}/cancelar:
  *   patch:
- *     summary: Cancelar un pedido
+ *     summary: Cancelar un pedido (revierte reservas)
  *     description: |
- *       Cambia el estado del pedido a CANCELADO.
- *       Requiere autenticación (y reglas según tu negocio).
+ *       Solo se puede cancelar si está en estado PENDIENTE.
+ *       Revierte reservas (cantidad_reservada) en inventario.
+ *
+ *       Regla: un CLIENTE solo puede cancelar pedidos propios.
  *     tags: [Pedidos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - $ref: '#/components/parameters/IdPathParam'
  *     requestBody:
  *       required: false
  *       content:
@@ -303,8 +382,7 @@ router.post("/", autenticacionMiddleware, pedidoController.crearPedido);
  *             properties:
  *               motivo:
  *                 type: string
- *           example:
- *             motivo: "Cliente lo solicitó"
+ *                 example: "Cliente lo solicitó"
  *     responses:
  *       200:
  *         description: Pedido cancelado
@@ -315,21 +393,20 @@ router.post("/", autenticacionMiddleware, pedidoController.crearPedido);
  *               properties:
  *                 mensaje:
  *                   type: string
+ *                   example: "Pedido cancelado y reservas revertidas"
  *                 pedido:
  *                   $ref: '#/components/schemas/Pedido'
- *       404:
- *         description: Pedido no encontrado
- *       401:
- *         description: No autenticado
  *       400:
- *         description: No se puede cancelar (por ejemplo ya cancelado/estado inválido)
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  *       500:
- *         description: Error interno
+ *         $ref: '#/components/responses/ServerError'
  */
-router.patch(
-  "/:id/cancelar",
-  autenticacionMiddleware,
-  pedidoController.cancelarPedido
-);
+router.patch("/:id/cancelar", autenticacionMiddleware, pedidoController.cancelarPedido);
 
 module.exports = router;
