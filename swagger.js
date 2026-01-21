@@ -36,52 +36,33 @@ const options = {
       },
     ],
 
-    /**
-     * 🔐 Seguridad global:
-     * - Si la mayoría requiere JWT, esto es lo mejor.
-     * - Para endpoints públicos, en el swagger del endpoint pon: security: []
-     */
     security: [{ bearerAuth: [] }],
 
     tags: [
       { name: "Auth", description: "Autenticación y gestión de sesiones" },
-      { name: "Usuarios", description: "Gestión de usuarios y roles" },
-
-      { name: "Unidades", description: "Unidades de medida" },
-
-      { name: "Productos", description: "Gestión de productos" },
-      {
-        name: "PresentacionesProductos",
-        description: "Gestión de presentaciones (SKU)",
-      },
-      {
-        name: "CategoriasProductos",
-        description: "Gestión de categorías de productos",
-      },
-      { name: "Proveedores", description: "Gestión de proveedores" },
-
-      {
-        name: "UbicacionesInventario",
-        description: "Gestión de ubicaciones de inventario",
-      },
-      { name: "Inventario", description: "Consulta y ajustes de inventario" },
-
-      { name: "Compras", description: "Compras y entradas a inventario" },
+      { name: "Carrito", description: "Carrito de compras del usuario" },
+      { name: "Catalogo", description: "Catálogo público de productos (sin autenticación)" },
+      { name: "CategoriasGastos", description: "Gestión de categorías de gastos (solo ADMINISTRADOR)" },
+      { name: "CategoriasProductos", description: "Gestión de categorías de productos. Lectura pública; escritura solo ADMINISTRADOR." },
+      { name: "Cobros", description: "Registro y consulta de cobros de clientes (ADMINISTRADOR / VENDEDOR)" },
+      { name: "Compras", description: "Registro de compras y actualización de inventario (ADMINISTRADOR / VENDEDOR)" },
       { name: "Consignaciones", description: "Salidas por consignación" },
-
-      { name: "Pedidos", description: "Gestión de pedidos" },
-      { name: "Ventas", description: "Ventas y detalle de ventas" },
-
-      { name: "Cobros", description: "Cobros asociados a ventas" },
       { name: "CuentasPorCobrar", description: "Cuentas por cobrar" },
-
       { name: "Envios", description: "Envíos y seguimiento" },
       { name: "Facturas", description: "Facturación" },
-
-      { name: "CategoriasGastos", description: "Categorías de gastos" },
       { name: "Gastos", description: "Registro y consulta de gastos" },
-
+      { name: "Health", description: "Estado del servicio y conexión a base de datos" },
+      { name: "Inventario", description: "Consulta y ajustes de inventario" },
       { name: "KPI", description: "Indicadores clave" },
+
+      { name: "Pedidos", description: "Gestión de pedidos" },
+      { name: "PresentacionesProductos", description: "Gestión de presentaciones (SKU)",},
+      { name: "Productos", description: "Gestión de productos" },
+      { name: "Proveedores", description: "Gestión de proveedores" },
+      { name: "UbicacionesInventario", description: "Gestión de ubicaciones de inventario",},
+      { name: "Unidades", description: "Unidades de medida" },
+      { name: "Usuarios", description: "Gestión de usuarios y roles" },     
+      { name: "Ventas", description: "Ventas y detalle de ventas" },
     ],
 
     externalDocs: {

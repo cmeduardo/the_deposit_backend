@@ -7,168 +7,88 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: Consignaciones
- *   description: Gestión de consignaciones (ADMINISTRADOR / VENDEDOR)
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     UsuarioResumen:
  *       type: object
  *       nullable: true
  *       properties:
- *         id:
- *           type: integer
- *           example: 12
- *         nombre:
- *           type: string
- *           example: "Juan Pérez"
- *         correo:
- *           type: string
- *           example: "juan@example.com"
+ *         id: { type: integer, example: 12 }
+ *         nombre: { type: string, example: "Juan Pérez" }
+ *         correo: { type: string, example: "juan@example.com" }
  *
  *     UbicacionResumen:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           example: 1
- *         nombre:
- *           type: string
- *           example: "Bodega Central"
- *         tipo:
- *           type: string
- *           example: "BODEGA"
+ *         id: { type: integer, example: 1 }
+ *         nombre: { type: string, example: "Bodega Central" }
+ *         tipo: { type: string, example: "BODEGA" }
  *
  *     ProductoResumen:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           example: 10
- *         nombre:
- *           type: string
- *           example: "Coca Cola 600ml"
- *         marca:
- *           type: string
- *           nullable: true
- *           example: "Coca Cola"
+ *         id: { type: integer, example: 10 }
+ *         nombre: { type: string, example: "Coca Cola 600ml" }
+ *         marca: { type: string, nullable: true, example: "Coca Cola" }
  *
- *     PresentacionResumen:
+ *     PresentacionResumenConsignacion:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           example: 25
- *         id_producto:
- *           type: integer
- *           example: 10
- *         nombre:
- *           type: string
- *           example: "Fardo x24"
- *         unidades_por_unidad_venta:
- *           type: integer
- *           example: 24
- *         precio_venta_por_defecto:
- *           type: string
- *           nullable: true
- *           example: "150.00"
+ *         id: { type: integer, example: 25 }
+ *         id_producto: { type: integer, example: 10 }
+ *         nombre: { type: string, example: "Fardo x24" }
+ *         unidades_por_unidad_venta: { type: integer, example: 24 }
+ *         precio_venta_por_defecto: { type: string, nullable: true, example: "150.00" }
  *         producto:
  *           $ref: "#/components/schemas/ProductoResumen"
  *
  *     DetalleConsignacionInput:
  *       type: object
- *       required:
- *         - id_presentacion_producto
- *         - cantidad_unidad_venta
+ *       required: [id_presentacion_producto, cantidad_unidad_venta]
  *       properties:
- *         id_presentacion_producto:
- *           type: integer
- *           example: 25
+ *         id_presentacion_producto: { type: integer, example: 25 }
  *         cantidad_unidad_venta:
  *           type: number
  *           example: 5
- *           description: "Cantidad en unidad de venta (puede ser decimal si tu negocio lo permite)."
+ *           description: "Cantidad en unidad de venta (puede ser decimal si el negocio lo permite)."
  *         precio_unitario_estimado:
  *           type: number
  *           format: float
  *           nullable: true
  *           example: 150
- *           description: "Si no se envía, se usa precio_venta_por_defecto de la presentación (si existe), o 0."
- *         notas:
- *           type: string
- *           nullable: true
- *           example: "Dejar en exhibición"
+ *           description: "Si no se envía, el backend usa precio_venta_por_defecto de la presentación (si existe), o 0."
+ *         notas: { type: string, nullable: true, example: "Dejar en exhibición" }
  *
  *     DetalleConsignacion:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           example: 101
- *         id_consignacion:
- *           type: integer
- *           example: 50
- *         id_presentacion_producto:
- *           type: integer
- *           example: 25
- *         cantidad_unidad_venta:
- *           type: number
- *           example: 5
+ *         id: { type: integer, example: 101 }
+ *         id_consignacion: { type: integer, example: 50 }
+ *         id_presentacion_producto: { type: integer, example: 25 }
+ *         cantidad_unidad_venta: { type: number, example: 5 }
  *         cantidad_unidad_base:
  *           type: number
  *           example: 120
  *           description: "cantidad_unidad_venta * unidades_por_unidad_venta"
- *         precio_unitario_estimado:
- *           type: string
- *           example: "150.00"
- *         subtotal_estimado:
- *           type: string
- *           example: "750.00"
- *         notas:
- *           type: string
- *           nullable: true
+ *         precio_unitario_estimado: { type: string, example: "150.00" }
+ *         subtotal_estimado: { type: string, example: "750.00" }
+ *         notas: { type: string, nullable: true }
  *         presentacion:
- *           $ref: "#/components/schemas/PresentacionResumen"
+ *           $ref: "#/components/schemas/PresentacionResumenConsignacion"
  *
  *     Consignacion:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           example: 50
- *         id_usuario_cliente:
- *           type: integer
- *           nullable: true
- *           example: 12
- *         id_ubicacion_salida:
- *           type: integer
- *           example: 1
- *         fecha_envio:
- *           type: string
- *           format: date
- *           example: "2026-01-20"
+ *         id: { type: integer, example: 50 }
+ *         id_usuario_cliente: { type: integer, nullable: true, example: 12 }
+ *         id_ubicacion_salida: { type: integer, example: 1 }
+ *         fecha_envio: { type: string, format: date, example: "2026-01-20" }
  *         estado:
  *           type: string
  *           enum: [ABIERTA, CERRADA, CANCELADA]
  *           example: ABIERTA
- *         subtotal_estimado:
- *           type: string
- *           example: "750.00"
- *         notas:
- *           type: string
- *           nullable: true
- *           example: "Consignación para cliente mayorista"
+ *         subtotal_estimado: { type: string, example: "750.00" }
+ *         notas: { type: string, nullable: true, example: "Consignación para cliente mayorista" }
  *         cliente_usuario:
  *           $ref: "#/components/schemas/UsuarioResumen"
  *         ubicacion_salida:
@@ -180,28 +100,21 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *
  *     CrearConsignacionInput:
  *       type: object
- *       required:
- *         - id_ubicacion_salida
- *         - detalles
+ *       required: [id_ubicacion_salida, detalles]
  *       properties:
  *         id_usuario_cliente:
  *           type: integer
  *           nullable: true
  *           example: 12
  *           description: "Opcional: si se consigna a un cliente específico."
- *         id_ubicacion_salida:
- *           type: integer
- *           example: 1
+ *         id_ubicacion_salida: { type: integer, example: 1 }
  *         fecha_envio:
  *           type: string
  *           format: date
  *           nullable: true
  *           example: "2026-01-20"
  *           description: "Opcional: si no se envía, el backend usa la fecha de hoy."
- *         notas:
- *           type: string
- *           nullable: true
- *           example: "Enviar en ruta mañana"
+ *         notas: { type: string, nullable: true, example: "Enviar en ruta mañana" }
  *         detalles:
  *           type: array
  *           minItems: 1
@@ -211,11 +124,17 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *     ConsignacionResponse:
  *       type: object
  *       properties:
- *         mensaje:
- *           type: string
- *           example: "Consignación creada y stock descontado correctamente"
+ *         mensaje: { type: string, example: "Consignación creada y stock descontado correctamente" }
  *         consignacion:
  *           $ref: "#/components/schemas/Consignacion"
+ *
+ *     CerrarConsignacionInput:
+ *       type: object
+ *       properties:
+ *         notas:
+ *           type: string
+ *           nullable: true
+ *           example: "Cerrada por finalización de período"
  */
 
 /**
@@ -225,40 +144,24 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *     summary: Listar consignaciones
  *     description: |
  *       Lista consignaciones con cliente (si aplica), ubicación de salida y detalles.
- *
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Consignaciones]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: estado
- *         schema:
- *           type: string
- *           enum: [ABIERTA, CERRADA, CANCELADA]
+ *       - name: estado
+ *         in: query
+ *         required: false
+ *         schema: { type: string, enum: [ABIERTA, CERRADA, CANCELADA] }
  *         description: Filtrar por estado
  *         example: ABIERTA
- *       - in: query
- *         name: id_cliente
- *         schema:
- *           type: integer
+ *       - name: id_cliente
+ *         in: query
+ *         required: false
+ *         schema: { type: integer }
  *         description: Filtrar por cliente (id_usuario_cliente)
  *         example: 12
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         description: Filtrar fecha_envio desde (inclusive)
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         description: Filtrar fecha_envio hasta (inclusive)
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
  *         description: Lista de consignaciones
@@ -269,23 +172,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/Consignacion"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/",
@@ -301,19 +192,11 @@ router.get(
  *     summary: Obtener consignación por ID
  *     description: |
  *       Devuelve una consignación con cliente (si aplica), ubicación de salida y detalles.
- *
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Consignaciones]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 50
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Consignación encontrada
@@ -322,17 +205,9 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/Consignacion"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Consignación no encontrada
  *         content:
@@ -343,11 +218,7 @@ router.get(
  *               noEncontrada:
  *                 value: { mensaje: "Consignación no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/:id",
@@ -374,8 +245,6 @@ router.get(
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Consignaciones]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -402,7 +271,7 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/ConsignacionResponse"
  *       400:
- *         description: Validación fallida (datos incompletos, ubicación/cliente/presentación no existe, stock insuficiente, etc.)
+ *         description: Validación fallida (mensajes definidos por el backend)
  *         content:
  *           application/json:
  *             schema:
@@ -419,29 +288,16 @@ router.get(
  *               presentacionesNoExisten:
  *                 value: { mensaje: "Una o más presentaciones de producto no existen" }
  *               detalleInvalido:
- *                 value:
- *                   mensaje: "Cada detalle debe tener id_presentacion_producto y cantidad_unidad_venta"
+ *                 value: { mensaje: "Cada detalle debe tener id_presentacion_producto y cantidad_unidad_venta" }
  *               stockInsuficiente:
  *                 value:
  *                   mensaje: "Stock insuficiente para el producto 10. Disponible: 5, requerido para consignación: 24"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",
@@ -456,7 +312,7 @@ router.post(
  *   patch:
  *     summary: Cerrar una consignación (solo cambia estado)
  *     description: |
- *       Cambia el estado de la consignación a **CERRADA**.
+ *       Cambia el estado a **CERRADA**.
  *       **No modifica inventario** (según la implementación actual).
  *
  *       Reglas:
@@ -466,26 +322,14 @@ router.post(
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Consignaciones]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 50
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: false
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               notas:
- *                 type: string
- *                 nullable: true
- *                 example: "Cerrada por finalización de período"
+ *             $ref: "#/components/schemas/CerrarConsignacionInput"
  *     responses:
  *       200:
  *         description: Consignación cerrada
@@ -494,9 +338,7 @@ router.post(
  *             schema:
  *               type: object
  *               properties:
- *                 mensaje:
- *                   type: string
- *                   example: "Consignación cerrada correctamente"
+ *                 mensaje: { type: string, example: "Consignación cerrada correctamente" }
  *                 consignacion:
  *                   $ref: "#/components/schemas/Consignacion"
  *       400:
@@ -511,17 +353,9 @@ router.post(
  *               cancelada:
  *                 value: { mensaje: "No se puede cerrar una consignación cancelada" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Consignación no encontrada
  *         content:
@@ -532,11 +366,7 @@ router.post(
  *               noEncontrada:
  *                 value: { mensaje: "Consignación no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.patch(
   "/:id/cerrar",

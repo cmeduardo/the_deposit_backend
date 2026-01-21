@@ -4,13 +4,6 @@ const db = require("../models");
 
 /**
  * @swagger
- * tags:
- *   name: Health
- *   description: Estado del servicio y conexión a base de datos
- */
-
-/**
- * @swagger
  * /api/health:
  *   get:
  *     summary: Health check del backend

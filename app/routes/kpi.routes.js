@@ -8,22 +8,8 @@ const kpi = require("../controllers/kpi.controller.js");
 
 /**
  * @swagger
- * tags:
- *   name: KPI
- *   description: Endpoints de indicadores clave del depósito
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     KpiRangoFechas:
  *       type: object
  *       properties:
@@ -55,7 +41,7 @@ const kpi = require("../controllers/kpi.controller.js");
  *           example: 850.25
  *         margen_sobre_ventas:
  *           type: number
- *           description: Ratio (0 a 1). Ej: 0.25 = 25%
+ *           description: "Ratio (0 a 1). Ej: 0.25 = 25%"
  *           example: 0.5667
  *         cuentas_por_cobrar_estimadas:
  *           type: number
@@ -249,7 +235,7 @@ const kpi = require("../controllers/kpi.controller.js");
  * @swagger
  * /api/kpi/resumen-financiero:
  *   get:
- *     summary: Obtiene un resumen financiero general (ventas, gastos, cobros, utilidad)
+ *     summary: Resumen financiero (ventas, gastos, cobros, utilidad)
  *     description: |
  *       Calcula:
  *       - Total de ventas (sum(total_general))
@@ -258,22 +244,17 @@ const kpi = require("../controllers/kpi.controller.js");
  *       - Utilidad neta estimada = ventas - gastos
  *       - Margen sobre ventas = utilidad / ventas (0..1)
  *       - Cuentas por cobrar estimadas = ventas - cobros
+ *
+ *       **Nota:** el mismo rango se aplica a:
+ *       - ventas: `fecha_venta`
+ *       - gastos: `fecha_gasto`
+ *       - cobros: `fecha_cobro`
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
  *         description: Resumen financiero calculado
@@ -282,23 +263,11 @@ const kpi = require("../controllers/kpi.controller.js");
  *             schema:
  *               $ref: "#/components/schemas/KpiResumenFinancieroResponse"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMIN)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/resumen-financiero",
@@ -310,30 +279,20 @@ router.get(
  * @swagger
  * /api/kpi/ventas-diarias:
  *   get:
- *     summary: Devuelve las ventas agregadas por día
+ *     summary: Ventas agregadas por día
  *     description: |
- *       Agrupa ventas por fecha (DATE(fecha_venta)) y retorna:
- *       - total_ventas
- *       - cantidad_ventas
+ *       Agrupa ventas por `DATE(fecha_venta)` y retorna:
+ *       - `total_ventas`
+ *       - `cantidad_ventas`
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
- *         description: Lista de ventas diarias
+ *         description: Serie de tiempo de ventas diarias
  *         content:
  *           application/json:
  *             schema:
@@ -341,23 +300,11 @@ router.get(
  *               items:
  *                 $ref: "#/components/schemas/KpiVentasDiariasRow"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/ventas-diarias",
@@ -371,30 +318,21 @@ router.get(
  *   get:
  *     summary: Ventas agregadas por categoría de producto
  *     description: |
- *       Agrupa `detalles_ventas` sumando:
- *       - subtotal_linea (Q)
- *       - cantidad_unidad_venta (unidades en unidad de venta)
- *       y lo asocia a la categoría del producto via:
+ *       Agrega desde `detalles_ventas`:
+ *       - total_ventas = SUM(subtotal_linea)
+ *       - unidades_vendidas = SUM(cantidad_unidad_venta)
+ *
+ *       Asociación:
  *       detalle -> presentacion -> producto -> categoria
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
- *         description: Lista de categorías con total vendido
+ *         description: Totales por categoría
  *         content:
  *           application/json:
  *             schema:
@@ -402,23 +340,11 @@ router.get(
  *               items:
  *                 $ref: "#/components/schemas/KpiVentasPorCategoriaRow"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/ventas-por-categoria",
@@ -430,27 +356,17 @@ router.get(
  * @swagger
  * /api/kpi/top-productos:
  *   get:
- *     summary: Top productos más vendidos en Q y unidades
+ *     summary: Top productos más vendidos (Q y unidades base)
  *     description: |
  *       Top N productos por:
- *       - total_ventas (SUM subtotal_linea)
- *       - unidades_vendidas_base (SUM cantidad_unidad_base)
+ *       - total_ventas = SUM(subtotal_linea)
+ *       - unidades_vendidas_base = SUM(cantidad_unidad_base)
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *       - in: query
  *         name: limite
  *         schema:
@@ -458,7 +374,7 @@ router.get(
  *           default: 10
  *           minimum: 1
  *           maximum: 100
- *         description: Cantidad de productos a devolver
+ *         description: Cantidad de productos a devolver (por defecto 10)
  *         example: 10
  *     responses:
  *       200:
@@ -470,23 +386,11 @@ router.get(
  *               items:
  *                 $ref: "#/components/schemas/KpiTopProductoRow"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/top-productos",
@@ -498,12 +402,14 @@ router.get(
  * @swagger
  * /api/kpi/inventario-bajo-minimo:
  *   get:
- *     summary: Lista productos cuyo stock está por debajo del mínimo
+ *     summary: Productos cuyo stock disponible está por debajo o igual al mínimo
  *     description: |
- *       Calcula stock por producto agregando inventarios_saldos:
+ *       Agrega inventarios_saldos por producto:
  *       - stock_disponible = SUM(cantidad_disponible)
  *       - stock_reservado = SUM(cantidad_reservada)
- *       Devuelve solo productos donde stock_disponible <= stock_minimo.
+ *       - stock_total = disponible + reservado
+ *
+ *       Devuelve solo los productos con `stock_disponible <= stock_minimo`.
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
@@ -517,23 +423,11 @@ router.get(
  *               items:
  *                 $ref: "#/components/schemas/KpiBajoMinimoRow"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/inventario-bajo-minimo",
@@ -545,29 +439,19 @@ router.get(
  * @swagger
  * /api/kpi/gastos-por-categoria:
  *   get:
- *     summary: Agrupa los gastos por categoría
+ *     summary: Gastos agregados por categoría
  *     description: |
- *       Agrupa gastos por id_categoria_gasto sumando monto.
- *       Puede haber gastos sin categoría (id_categoria_gasto null).
+ *       Agrega gastos por `id_categoria_gasto` sumando `monto`.
+ *       Puede haber gastos sin categoría (`id_categoria_gasto = null`).
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
- *         description: Lista de categorías de gasto con totales
+ *         description: Totales por categoría de gasto
  *         content:
  *           application/json:
  *             schema:
@@ -575,23 +459,11 @@ router.get(
  *               items:
  *                 $ref: "#/components/schemas/KpiGastosPorCategoriaRow"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMIN)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/gastos-por-categoria",
@@ -603,12 +475,18 @@ router.get(
  * @swagger
  * /api/kpi/rotacion-inventario:
  *   get:
- *     summary: Calcula la rotación de inventario por producto en un periodo
+ *     summary: Rotación de inventario por producto (ventas del periodo vs stock actual)
  *     description: |
- *       Ventas del periodo (sum cantidad_unidad_base) / stock_total actual.
+ *       Calcula la rotación por producto usando:
+ *       - Ventas del periodo (SUM(cantidad_unidad_base))
+ *       - Stock actual (SUM inventarios_saldos)
  *
- *       - dias (default 30) define el periodo hacia atrás desde "hoy".
- *       - indice_rotacion = unidades_vendidas_base / stock_total (si stock_total=0 => null)
+ *       Parámetro:
+ *       - `dias` (default 30): periodo hacia atrás desde "hoy" del servidor
+ *
+ *       Cálculo:
+ *       - `indice_rotacion = unidades_vendidas_base / stock_total`
+ *       - si `stock_total = 0` => `indice_rotacion = null`
  *     tags: [KPI]
  *     security:
  *       - bearerAuth: []
@@ -620,33 +498,21 @@ router.get(
  *           default: 30
  *           minimum: 1
  *           maximum: 3650
- *         description: Días hacia atrás para calcular la rotación
+ *         description: Días hacia atrás para calcular el periodo (por defecto 30)
  *         example: 30
  *     responses:
  *       200:
- *         description: Lista de productos con info de rotación
+ *         description: Rotación por producto
  *         content:
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/KpiRotacionResponse"
  *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/rotacion-inventario",

@@ -8,21 +8,189 @@ const facturaController = require("../controllers/factura.controller");
 
 /**
  * @swagger
- * tags:
- *   name: Facturas
- *   description: Módulo de facturación (emisión, consulta y anulación). Requiere autenticación.
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
+ *     Producto:
  *       type: object
  *       properties:
- *         mensaje:
+ *         id:
+ *           type: integer
+ *           example: 10
+ *         nombre:
  *           type: string
- *           example: "Error interno del servidor"
+ *           example: "Coca Cola 600ml"
+ *         descripcion:
+ *           type: string
+ *           nullable: true
+ *           example: "Bebida gaseosa"
+ *         url_imagen:
+ *           type: string
+ *           nullable: true
+ *           example: "https://..."
+ *         marca:
+ *           type: string
+ *           nullable: true
+ *           example: "Coca Cola"
+ *         id_categoria:
+ *           type: integer
+ *           nullable: true
+ *           example: 3
+ *         id_unidad_base:
+ *           type: integer
+ *           example: 1
+ *         es_perecedero:
+ *           type: boolean
+ *           example: false
+ *         stock_minimo:
+ *           type: integer
+ *           example: 0
+ *         activo:
+ *           type: boolean
+ *           example: true
+ *
+ *     PresentacionProducto:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 25
+ *         id_producto:
+ *           type: integer
+ *           example: 10
+ *         nombre:
+ *           type: string
+ *           example: "Fardo x24"
+ *         url_imagen:
+ *           type: string
+ *           nullable: true
+ *           example: "https://..."
+ *         codigo_barras:
+ *           type: string
+ *           nullable: true
+ *           example: "1234567890"
+ *         id_unidad_venta:
+ *           type: integer
+ *           example: 2
+ *         unidades_por_unidad_venta:
+ *           type: integer
+ *           example: 24
+ *         precio_venta_por_defecto:
+ *           type: number
+ *           format: float
+ *           nullable: true
+ *           example: 150.0
+ *         precio_minimo:
+ *           type: number
+ *           format: float
+ *           nullable: true
+ *           example: 130.0
+ *         activo:
+ *           type: boolean
+ *           example: true
+ *         producto:
+ *           $ref: "#/components/schemas/Producto"
+ *
+ *     DetalleVenta:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 5001
+ *         id_venta:
+ *           type: integer
+ *           example: 10
+ *         id_presentacion_producto:
+ *           type: integer
+ *           example: 25
+ *         cantidad_unidad_venta:
+ *           type: integer
+ *           example: 5
+ *         cantidad_unidad_base:
+ *           type: integer
+ *           example: 120
+ *         precio_unitario_venta:
+ *           type: number
+ *           format: float
+ *           example: 150.0
+ *         precio_unitario_base:
+ *           type: number
+ *           format: float
+ *           example: 6.25
+ *         es_precio_manual:
+ *           type: boolean
+ *           example: false
+ *         subtotal_linea:
+ *           type: number
+ *           format: float
+ *           example: 750.0
+ *         presentacion:
+ *           $ref: "#/components/schemas/PresentacionProducto"
+ *
+ *     Venta:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 10
+ *         id_pedido:
+ *           type: integer
+ *           nullable: true
+ *           example: 100
+ *         id_usuario_cliente:
+ *           type: integer
+ *           nullable: true
+ *           example: 12
+ *         id_ubicacion_salida:
+ *           type: integer
+ *           example: 1
+ *         nombre_cliente:
+ *           type: string
+ *           nullable: true
+ *           example: "Juan Pérez"
+ *         fecha_venta:
+ *           type: string
+ *           format: date
+ *           example: "2026-01-19"
+ *         subtotal_productos:
+ *           type: number
+ *           format: float
+ *           example: 250.0
+ *         impuestos:
+ *           type: number
+ *           format: float
+ *           example: 0
+ *         cargo_envio:
+ *           type: number
+ *           format: float
+ *           example: 0
+ *         descuento_total:
+ *           type: number
+ *           format: float
+ *           example: 0
+ *         total_general:
+ *           type: number
+ *           format: float
+ *           example: 250.0
+ *         tipo_pago:
+ *           type: string
+ *           nullable: true
+ *           example: "Contado"
+ *         estado_pago:
+ *           type: string
+ *           enum: [PENDIENTE, PAGADO, PARCIAL]
+ *           example: "PAGADO"
+ *         estado:
+ *           type: string
+ *           enum: [REGISTRADA, ANULADA]
+ *           example: "REGISTRADA"
+ *         notas:
+ *           type: string
+ *           nullable: true
+ *           example: "Opcional"
+ *         detalles:
+ *           type: array
+ *           items:
+ *             $ref: "#/components/schemas/DetalleVenta"
  *
  *     Factura:
  *       type: object
@@ -64,7 +232,7 @@ const facturaController = require("../controllers/factura.controller");
  *         total_facturado:
  *           type: number
  *           format: float
- *           example: 250.00
+ *           example: 250.0
  *         estado:
  *           type: string
  *           enum: [EMITIDA, ANULADA]
@@ -92,9 +260,10 @@ const facturaController = require("../controllers/factura.controller");
  *         total_general:
  *           type: number
  *           format: float
- *           example: 250.00
+ *           example: 250.0
  *         estado_pago:
  *           type: string
+ *           enum: [PENDIENTE, PAGADO, PARCIAL]
  *           example: "PAGADO"
  *
  *     FacturaConVenta:
@@ -121,6 +290,7 @@ const facturaController = require("../controllers/factura.controller");
  *           example: "000001"
  *         tipo_documento:
  *           type: string
+ *           nullable: true
  *           example: "FACTURA"
  *         nombre_cliente_factura:
  *           type: string
@@ -164,17 +334,13 @@ const facturaController = require("../controllers/factura.controller");
  *         factura:
  *           $ref: "#/components/schemas/Factura"
  *
- *     // Nota: para el detalle completo (factura -> venta -> detalles -> presentacion -> producto),
- *     // normalmente reusarías tus schemas existentes (Venta, DetalleVenta, PresentacionProducto, Producto).
- *     // Aquí lo dejamos como objeto para no duplicar todo si ya lo tienes definido en otros archivos.
  *     FacturaDetalleCompleto:
  *       allOf:
  *         - $ref: "#/components/schemas/Factura"
  *         - type: object
  *           properties:
  *             venta:
- *               type: object
- *               description: Incluye detalles de venta, presentación y producto (según tu include del controller)
+ *               $ref: "#/components/schemas/Venta"
  */
 
 /**
@@ -206,17 +372,6 @@ const facturaController = require("../controllers/factura.controller");
  *         application/json:
  *           schema:
  *             $ref: "#/components/schemas/FacturaCreateInput"
- *           examples:
- *             ejemplo:
- *               value:
- *                 id_venta: 10
- *                 serie: "A"
- *                 numero: "000001"
- *                 tipo_documento: "FACTURA"
- *                 nombre_cliente_factura: "Juan Pérez"
- *                 nit_cliente: "1234567-8"
- *                 direccion_cliente: "Guatemala"
- *                 notas: "Gracias por su compra"
  *     responses:
  *       201:
  *         description: Factura creada
@@ -245,17 +400,9 @@ const facturaController = require("../controllers/factura.controller");
  *               ventaNoExiste:
  *                 value: { mensaje: "Venta no encontrada" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
  *         description: Error interno al emitir la factura
  *         content:
@@ -287,29 +434,21 @@ router.post(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         description: Fecha emisión desde (inclusive)
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         description: Fecha emisión hasta (inclusive)
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *       - in: query
  *         name: nit
  *         schema:
  *           type: string
  *         description: Filtrar por NIT (ej. CF)
+ *         example: "CF"
  *       - in: query
  *         name: estado
  *         schema:
  *           type: string
  *           enum: [EMITIDA, ANULADA]
  *         description: Filtrar por estado de factura
+ *         example: "EMITIDA"
  *     responses:
  *       200:
  *         description: Lista de facturas
@@ -320,17 +459,9 @@ router.post(
  *               items:
  *                 $ref: "#/components/schemas/FacturaConVenta"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
  *         description: Error interno al listar facturas
  *         content:
@@ -362,12 +493,7 @@ router.get(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Factura encontrada
@@ -385,17 +511,9 @@ router.get(
  *               noEncontrada:
  *                 value: { mensaje: "Factura no encontrada" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
  *         description: Error interno al obtener la factura
  *         content:
@@ -446,17 +564,9 @@ router.get(
  *               sinFactura:
  *                 value: { mensaje: "No existe factura asociada a esta venta" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
  *         description: Error interno al obtener factura por venta
  *         content:
@@ -485,12 +595,7 @@ router.get(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: false
  *       content:
@@ -527,17 +632,9 @@ router.get(
  *               noEncontrada:
  *                 value: { mensaje: "Factura no encontrada" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
  *         description: Error interno al anular la factura
  *         content:

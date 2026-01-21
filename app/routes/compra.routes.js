@@ -7,22 +7,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: Compras
- *   description: Registro de compras y actualización de inventario (ADMINISTRADOR / VENDEDOR)
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     ProveedorResumen:
  *       type: object
  *       properties:
@@ -251,8 +237,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Compras]
- *     security:
- *       - bearerAuth: []
+ *     parameters: []
  *     responses:
  *       200:
  *         description: Lista de compras
@@ -263,23 +248,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/Compra"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/",
@@ -297,21 +270,14 @@ router.get(
  *       Devuelve una compra con:
  *       - proveedor
  *       - ubicación
- *       - detalles (con presentación y producto resumido)
+ *       - detalles (con presentación y producto)
  *       - totales (subtotal, costos_adicionales, total)
  *
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Compras]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 50
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Compra encontrada
@@ -320,17 +286,9 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/Compra"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Compra no encontrada
  *         content:
@@ -341,11 +299,7 @@ router.get(
  *               noEncontrada:
  *                 value: { mensaje: "Compra no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/:id",
@@ -364,8 +318,7 @@ router.get(
  *
  *       Operación transaccional:
  *       - valida proveedor y ubicación
- *       - crea compra
- *       - crea detalles
+ *       - crea compra y detalles
  *       - suma existencias al inventario (cantidad_unidad_base)
  *       - registra movimientos de inventario tipo **COMPRA**
  *       - recalcula totales (subtotal + costos adicionales)
@@ -377,8 +330,6 @@ router.get(
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Compras]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -403,13 +354,28 @@ router.get(
  *                     fecha_vencimiento: "2026-06-30"
  *     responses:
  *       201:
- *         description: Compra creada y devolviendo compra completa
+ *         description: Compra creada y devuelta completa
  *         content:
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/CompraResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Compra creada correctamente"
+ *                   compra:
+ *                     id: 50
+ *                     id_proveedor: 3
+ *                     id_ubicacion: 1
+ *                     fecha_compra: "2026-01-20"
+ *                     numero_documento: "FAC-001-12345"
+ *                     subtotal: "700.00"
+ *                     impuestos: "0.00"
+ *                     costos_adicionales: "25.00"
+ *                     total: "725.00"
+ *                     notas: "Compra de reposición"
  *       400:
- *         description: Validación fallida (faltan datos, proveedor/ubicación no existe, presentación no existe, etc.)
+ *         description: Validación fallida (mensajes definidos por el backend)
  *         content:
  *           application/json:
  *             schema:
@@ -428,23 +394,11 @@ router.get(
  *               presentacionNoExiste:
  *                 value: { mensaje: "La presentación 999 no existe" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",

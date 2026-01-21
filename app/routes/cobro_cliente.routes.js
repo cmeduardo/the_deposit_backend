@@ -7,22 +7,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: Cobros
- *   description: Registro y consulta de cobros de clientes (ADMINISTRADOR / VENDEDOR)
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     VentaResumenCobro:
  *       type: object
  *       properties:
@@ -187,11 +173,10 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *     summary: Listar cobros de clientes
  *     description: |
  *       Lista cobros registrados, con información resumida de la venta y del usuario que registró el cobro.
+ *
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Cobros]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id_venta
@@ -200,22 +185,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         required: false
  *         description: Filtrar por venta
  *         example: 100
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         required: false
- *         description: Fecha mínima (YYYY-MM-DD)
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         required: false
- *         description: Fecha máxima (YYYY-MM-DD)
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
  *         description: Lista de cobros
@@ -226,23 +197,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/CobroCliente"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/",
@@ -261,15 +220,8 @@ router.get(
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Cobros]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 15
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Cobro encontrado
@@ -278,17 +230,9 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/CobroCliente"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Cobro no encontrado
  *         content:
@@ -299,11 +243,7 @@ router.get(
  *               noEncontrado:
  *                 value: { mensaje: "Cobro no encontrado" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/:id",
@@ -319,17 +259,17 @@ router.get(
  *     summary: Registrar un cobro de cliente para una venta
  *     description: |
  *       Registra un cobro (abono o pago total) para una venta.
- *       El sistema:
- *       - bloquea la venta (transacción)
- *       - valida que la venta exista y no esté anulada
- *       - valida que el cobro NO exceda el saldo pendiente
+ *
+ *       Reglas implementadas:
+ *       - `id_venta`, `fecha_cobro` y `monto` son obligatorios
+ *       - la venta debe existir
+ *       - no permite cobros para ventas con `estado = ANULADA`
+ *       - no permite que el monto exceda el saldo (tolerancia: 0.01)
  *       - actualiza `venta.estado_pago` a **PENDIENTE**, **PARCIAL** o **PAGADO**
  *
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Cobros]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -352,8 +292,30 @@ router.get(
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/CobroResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Cobro registrado correctamente"
+ *                   cobro:
+ *                     id: 15
+ *                     id_venta: 100
+ *                     id_usuario_registro: 2
+ *                     fecha_cobro: "2026-01-20"
+ *                     monto: "50.00"
+ *                     metodo_pago: "EFECTIVO"
+ *                     referencia_pago: null
+ *                     notas: "Abono"
+ *                     venta:
+ *                       id: 100
+ *                       fecha_venta: "2026-01-20"
+ *                       total_general: "250.00"
+ *                       estado_pago: "PARCIAL"
+ *                     usuario_registro:
+ *                       id: 2
+ *                       nombre: "María López"
+ *                       correo: "maria@correo.com"
  *       400:
- *         description: Validación fallida (venta no existe, venta anulada, monto excede saldo, etc.)
+ *         description: Validación fallida (datos faltantes, venta no existe, venta anulada, monto excede saldo, etc.)
  *         content:
  *           application/json:
  *             schema:
@@ -369,23 +331,11 @@ router.get(
  *                 value:
  *                   mensaje: "El monto del cobro excede el saldo pendiente de la venta. Total venta: 250, ya cobrado: 50, intento: 210"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",
@@ -398,20 +348,19 @@ router.post(
  * @swagger
  * /api/cuentas-por-cobrar:
  *   get:
- *     summary: Listar cuentas por cobrar (ventas con saldo pendiente)
+ *     summary: Listar cuentas por cobrar
  *     description: |
- *       Devuelve un resumen de ventas NO anuladas cuyo saldo pendiente sea > 0.01.
+ *       Devuelve un resumen de ventas **NO anuladas** cuyo saldo pendiente sea > 0.01.
+ *
  *       Calcula:
- *       - total_venta
- *       - total_cobrado (sumatoria de cobros)
- *       - saldo_pendiente
- *       - estado_pago
+ *       - `total_venta`
+ *       - `total_cobrado` (sumatoria de cobros)
+ *       - `saldo_pendiente`
+ *       - `estado_pago`
  *
  *       - Requiere autenticación (JWT)
  *       - Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Cobros]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id_cliente
@@ -420,22 +369,8 @@ router.post(
  *         required: false
  *         description: Filtrar por cliente (id_usuario_cliente)
  *         example: 1
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         required: false
- *         description: Fecha mínima de venta (YYYY-MM-DD)
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         required: false
- *         description: Fecha máxima de venta (YYYY-MM-DD)
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
  *         description: Resumen de cuentas por cobrar
@@ -444,23 +379,11 @@ router.post(
  *             schema:
  *               $ref: "#/components/schemas/CuentasPorCobrarResponse"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/cuentas-por-cobrar",

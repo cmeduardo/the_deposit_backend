@@ -7,13 +7,6 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: CategoriasGastos
- *   description: Gestión de categorías de gastos (solo ADMINISTRADOR)
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
  *     CategoriaGasto:
@@ -88,12 +81,14 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         categoria:
  *           $ref: "#/components/schemas/CategoriaGasto"
  *
- *     ErrorResponse:
+ *     CategoriaGastoUpdateResponse:
  *       type: object
  *       properties:
  *         mensaje:
  *           type: string
- *           example: "Error interno del servidor"
+ *           example: "Categoría de gasto actualizada correctamente"
+ *         categoria:
+ *           $ref: "#/components/schemas/CategoriaGasto"
  */
 
 /**
@@ -106,8 +101,6 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *       - Requiere autenticación (JWT)
  *       - Requiere rol **ADMINISTRADOR**
  *     tags: [CategoriasGastos]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: activo
@@ -126,23 +119,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/CategoriaGasto"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (no es ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/",
@@ -161,15 +142,8 @@ router.get(
  *       - Requiere autenticación (JWT)
  *       - Requiere rol **ADMINISTRADOR**
  *     tags: [CategoriasGastos]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Categoría encontrada
@@ -178,17 +152,9 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/CategoriaGasto"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (no es ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Categoría no encontrada
  *         content:
@@ -199,11 +165,7 @@ router.get(
  *               noEncontrada:
  *                 value: { mensaje: "Categoría de gasto no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/:id",
@@ -222,8 +184,6 @@ router.get(
  *       - Requiere autenticación (JWT)
  *       - Requiere rol **ADMINISTRADOR**
  *     tags: [CategoriasGastos]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -244,8 +204,18 @@ router.get(
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/CategoriaGastoResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Categoría de gasto creada correctamente"
+ *                   categoria:
+ *                     id: 1
+ *                     nombre: "Servicios"
+ *                     descripcion: "Agua, luz, internet"
+ *                     tipo_por_defecto: "FIJO"
+ *                     activo: true
  *       400:
- *         description: Datos inválidos (ej. nombre faltante)
+ *         description: Datos inválidos
  *         content:
  *           application/json:
  *             schema:
@@ -254,23 +224,11 @@ router.get(
  *               nombreObligatorio:
  *                 value: { mensaje: "El nombre es obligatorio" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (no es ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",
@@ -288,16 +246,12 @@ router.post(
  *       Actualiza campos de una categoría existente.
  *       - Requiere autenticación (JWT)
  *       - Requiere rol **ADMINISTRADOR**
+ *
+ *       Campos editables:
+ *       - `nombre`, `descripcion`, `tipo_por_defecto`, `activo`
  *     tags: [CategoriasGastos]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: true
  *       content:
@@ -315,31 +269,21 @@ router.post(
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 mensaje:
- *                   type: string
- *                   example: "Categoría de gasto actualizada correctamente"
- *                 categoria:
- *                   $ref: "#/components/schemas/CategoriaGasto"
- *       400:
- *         description: Datos inválidos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *               $ref: "#/components/schemas/CategoriaGastoUpdateResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Categoría de gasto actualizada correctamente"
+ *                   categoria:
+ *                     id: 1
+ *                     nombre: "Renta"
+ *                     descripcion: "Pago mensual del local (actualizado)"
+ *                     tipo_por_defecto: "FIJO"
+ *                     activo: true
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (no es ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Categoría no encontrada
  *         content:
@@ -350,11 +294,7 @@ router.post(
  *               noEncontrada:
  *                 value: { mensaje: "Categoría de gasto no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.patch(
   "/:id",

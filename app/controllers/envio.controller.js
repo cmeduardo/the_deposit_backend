@@ -39,7 +39,7 @@ const listarEnvios = async (req, res) => {
         {
           model: Pedido,
           as: "pedido",
-          attributes: ["id", "estado", "fecha_pedido"],
+          attributes: ["id", "estado", "fecha_pedido", "fuente"], 
         },
         {
           model: Venta,
@@ -67,7 +67,7 @@ const obtenerEnvioPorId = async (req, res) => {
         {
           model: Pedido,
           as: "pedido",
-          attributes: ["id", "estado", "fecha_pedido"],
+          attributes: ["id", "estado", "fecha_pedido", "fuente"],
         },
         {
           model: Venta,
@@ -157,7 +157,7 @@ const crearEnvio = async (req, res) => {
 
     const envioCompleto = await Envio.findByPk(envio.id, {
       include: [
-        { model: Pedido, as: "pedido", attributes: ["id", "estado"] },
+        { model: Pedido, as: "pedido", attributes: ["id", "estado", "fecha_pedido", "fuente"] },
         {
           model: Venta,
           as: "venta",
@@ -223,7 +223,7 @@ const actualizarEnvio = async (req, res) => {
 
     const envioCompleto = await Envio.findByPk(envio.id, {
       include: [
-        { model: Pedido, as: "pedido", attributes: ["id", "estado"] },
+        { model: Pedido, as: "pedido", attributes: ["id", "estado", "fecha_pedido", "fuente"]},
         {
           model: Venta,
           as: "venta",

@@ -2,24 +2,11 @@ const express = require("express");
 const router = express.Router();
 const catalogoController = require("../controllers/catalogo.controller");
 
-/**
- * @swagger
- * tags:
- *   name: Catalogo
- *   description: Catálogo público de productos para la tienda en línea (sin autenticación)
- */
 
 /**
  * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     CatalogoCategoria:
  *       type: object
  *       nullable: true
@@ -152,29 +139,7 @@ const catalogoController = require("../controllers/catalogo.controller");
  *       type: object
  *       properties:
  *         meta:
- *           type: object
- *           properties:
- *             page:
- *               type: integer
- *               example: 1
- *             limit:
- *               type: integer
- *               example: 20
- *             total:
- *               type: integer
- *               example: 125
- *             total_pages:
- *               type: integer
- *               example: 7
- *             sort:
- *               type: string
- *               example: "nombre"
- *             order:
- *               type: string
- *               example: "asc"
- *             filtros:
- *               type: object
- *               additionalProperties: true
+ *           $ref: "#/components/schemas/MetaPaginacion"
  *         data:
  *           type: array
  *           items:
@@ -185,7 +150,7 @@ const catalogoController = require("../controllers/catalogo.controller");
  * @swagger
  * /api/catalogo/productos:
  *   get:
- *     summary: Listar productos del catálogo (cards por producto)
+ *     summary: Listar productos del catálogo
  *     description: |
  *       Lista productos **activos** del catálogo en formato **card** (respuesta liviana).
  *
@@ -228,21 +193,8 @@ const catalogoController = require("../controllers/catalogo.controller");
  *           type: number
  *         description: Precio máximo
  *         example: 200
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Página
- *         example: 1
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *           maximum: 100
- *         description: Tamaño de página (máx 100)
- *         example: 20
+ *       - $ref: "#/components/parameters/PageQuery"
+ *       - $ref: "#/components/parameters/LimitQuery"
  *       - in: query
  *         name: sort
  *         schema:
@@ -267,11 +219,7 @@ const catalogoController = require("../controllers/catalogo.controller");
  *             schema:
  *               $ref: "#/components/schemas/CatalogoProductosResponse"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get("/productos", catalogoController.listarProductosCatalogo);
 
@@ -279,7 +227,7 @@ router.get("/productos", catalogoController.listarProductosCatalogo);
  * @swagger
  * /api/catalogo/productos/{id}:
  *   get:
- *     summary: Obtener detalle público de un producto por ID (página de producto)
+ *     summary: Obtener detalle público de un producto por ID
  *     description: |
  *       Devuelve un producto **activo** con:
  *       - `categoria` (si aplica y está activa)
@@ -290,12 +238,7 @@ router.get("/productos", catalogoController.listarProductosCatalogo);
  *     tags: [Catalogo]
  *     security: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Producto encontrado con presentaciones activas
@@ -313,11 +256,7 @@ router.get("/productos", catalogoController.listarProductosCatalogo);
  *               noEncontrado:
  *                 value: { mensaje: "Producto no encontrado" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get("/productos/:id", catalogoController.obtenerProductoCatalogoPorId);
 
@@ -331,12 +270,7 @@ router.get("/productos/:id", catalogoController.obtenerProductoCatalogoPorId);
  *     tags: [Catalogo]
  *     security: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 10
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Presentación encontrada
@@ -359,11 +293,7 @@ router.get("/productos/:id", catalogoController.obtenerProductoCatalogoPorId);
  *               noEncontrada:
  *                 value: { mensaje: "Presentación no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get("/presentaciones/:id", catalogoController.obtenerPresentacionCatalogo);
 

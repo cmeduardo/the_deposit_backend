@@ -5,12 +5,6 @@ const categoriaController = require("../controllers/categoria_producto.controlle
 const autenticacionMiddleware = require("../middlewares/autenticacion.middleware");
 const rolMiddleware = require("../middlewares/rol.middleware");
 
-/**
- * @swagger
- * tags:
- *   name: CategoriasProductos
- *   description: Gestión de categorías de productos. Lectura pública; escritura solo ADMINISTRADOR.
- */
 
 /**
  * @swagger
@@ -73,12 +67,14 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         categoria:
  *           $ref: "#/components/schemas/CategoriaProducto"
  *
- *     ErrorResponse:
+ *     CategoriaProductoUpdateResponse:
  *       type: object
  *       properties:
  *         mensaje:
  *           type: string
- *           example: "Error interno del servidor"
+ *           example: "Categoría actualizada correctamente"
+ *         categoria:
+ *           $ref: "#/components/schemas/CategoriaProducto"
  */
 
 /**
@@ -101,11 +97,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/CategoriaProducto"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get("/", categoriaController.listarCategorias);
 
@@ -120,12 +112,7 @@ router.get("/", categoriaController.listarCategorias);
  *     tags: [CategoriasProductos]
  *     security: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Categoría encontrada
@@ -143,11 +130,7 @@ router.get("/", categoriaController.listarCategorias);
  *               noEncontrada:
  *                 value: { mensaje: "Categoría no encontrada" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get("/:id", categoriaController.obtenerCategoriaPorId);
 
@@ -165,8 +148,6 @@ router.get("/:id", categoriaController.obtenerCategoriaPorId);
  *       - `nombre` es obligatorio
  *       - `nombre` debe ser único (retorna 409 si ya existe)
  *     tags: [CategoriasProductos]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -186,6 +167,15 @@ router.get("/:id", categoriaController.obtenerCategoriaPorId);
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/CategoriaProductoResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Categoría creada correctamente"
+ *                   categoria:
+ *                     id: 1
+ *                     nombre: "BEBIDAS"
+ *                     descripcion: "Gaseosas, jugos y bebidas energéticas"
+ *                     activo: true
  *       400:
  *         description: Datos inválidos (ej. nombre faltante)
  *         content:
@@ -196,17 +186,9 @@ router.get("/:id", categoriaController.obtenerCategoriaPorId);
  *               nombreObligatorio:
  *                 value: { mensaje: "El nombre es obligatorio" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (no es ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       409:
  *         description: Conflicto (nombre duplicado)
  *         content:
@@ -217,11 +199,7 @@ router.get("/:id", categoriaController.obtenerCategoriaPorId);
  *               duplicada:
  *                 value: { mensaje: "Ya existe una categoría con ese nombre" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",
@@ -243,15 +221,8 @@ router.post(
  *       Validaciones:
  *       - Si se cambia `nombre`, debe seguir siendo único (retorna 409 si ya existe)
  *     tags: [CategoriasProductos]
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: true
  *       content:
@@ -269,31 +240,29 @@ router.post(
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 mensaje:
- *                   type: string
- *                   example: "Categoría actualizada correctamente"
- *                 categoria:
- *                   $ref: "#/components/schemas/CategoriaProducto"
+ *               $ref: "#/components/schemas/CategoriaProductoUpdateResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Categoría actualizada correctamente"
+ *                   categoria:
+ *                     id: 1
+ *                     nombre: "ALIMENTOS"
+ *                     descripcion: "Alimentos de consumo humano (actualizado)"
+ *                     activo: true
  *       400:
  *         description: Datos inválidos
  *         content:
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               invalido:
+ *                 value: { mensaje: "Datos inválidos" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (no es ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       404:
  *         description: Categoría no encontrada
  *         content:
@@ -313,11 +282,7 @@ router.post(
  *               duplicada:
  *                 value: { mensaje: "Ya existe una categoría con ese nombre" }
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.patch(
   "/:id",

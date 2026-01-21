@@ -7,40 +7,33 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: Envios
- *   description: Registro y seguimiento de envíos vinculados a pedidos o ventas. Requiere ADMINISTRADOR o VENDEDOR.
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
- *     PedidoResumen:
+ *     PedidoResumenEnvio:
  *       type: object
  *       nullable: true
+ *       description: Resumen del pedido incluido por el controller en Envios.
  *       properties:
  *         id:
  *           type: integer
  *           example: 100
  *         estado:
  *           type: string
+ *           enum: [PENDIENTE, CANCELADO, COMPLETADO]
  *           example: "PENDIENTE"
  *         fecha_pedido:
  *           type: string
  *           format: date
  *           example: "2026-01-15"
+ *         fuente:
+ *           type: string
+ *           enum: [ONLINE, ADMIN, OTRO, TIENDA_EN_LINEA, DESDE_CARRITO]
+ *           example: "ONLINE"
  *
- *     VentaResumen:
+ *     VentaResumenEnvio:
  *       type: object
  *       nullable: true
+ *       description: Resumen de la venta incluida por el controller en Envios.
  *       properties:
  *         id:
  *           type: integer
@@ -52,7 +45,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         total_general:
  *           type: number
  *           format: float
- *           example: 250.00
+ *           example: 250.0
  *         estado_pago:
  *           type: string
  *           example: "PARCIAL"
@@ -116,12 +109,12 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           type: number
  *           format: float
  *           nullable: true
- *           example: 25.00
+ *           example: 25.0
  *         costo_real:
  *           type: number
  *           format: float
  *           nullable: true
- *           example: 18.50
+ *           example: 18.5
  *         notas:
  *           type: string
  *           nullable: true
@@ -133,15 +126,17 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         - type: object
  *           properties:
  *             pedido:
- *               $ref: "#/components/schemas/PedidoResumen"
+ *               $ref: "#/components/schemas/PedidoResumenEnvio"
  *             venta:
- *               $ref: "#/components/schemas/VentaResumen"
+ *               $ref: "#/components/schemas/VentaResumenEnvio"
  *
  *     EnvioCreateInput:
  *       type: object
  *       description: |
  *         Para crear un envío, debes indicar **al menos uno**: `id_pedido` o `id_venta`.
- *         Si no envías `fecha_envio`, se usa la fecha actual del servidor. Si no envías `estado_envio`, queda `PENDIENTE`.
+ *         Defaults del controller:
+ *         - `fecha_envio`: hoy (server)
+ *         - `estado_envio`: `PENDIENTE`
  *       properties:
  *         id_pedido:
  *           type: integer
@@ -161,44 +156,57 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           example: "PENDIENTE"
  *         nombre_destinatario:
  *           type: string
+ *           nullable: true
  *           example: "María López"
  *         direccion_entrega:
  *           type: string
+ *           nullable: true
  *           example: "7a avenida 10-20, zona 1"
  *         referencia_direccion:
  *           type: string
+ *           nullable: true
  *           example: "Frente al parque"
  *         telefono_contacto:
  *           type: string
+ *           nullable: true
  *           example: "+502 5555-5555"
  *         zona:
  *           type: string
+ *           nullable: true
  *           example: "1"
  *         ciudad:
  *           type: string
+ *           nullable: true
  *           example: "Guatemala"
  *         transportista:
  *           type: string
+ *           nullable: true
  *           example: "Mensajería X"
  *         tipo_envio:
  *           type: string
+ *           nullable: true
  *           enum: [LOCAL, NACIONAL]
  *           example: "LOCAL"
  *         costo_cobrado:
  *           type: number
  *           format: float
+ *           nullable: true
  *           example: 25
  *         costo_real:
  *           type: number
  *           format: float
+ *           nullable: true
  *           example: 18.5
  *         notas:
  *           type: string
+ *           nullable: true
  *           example: "Entregar en horario de oficina"
  *
  *     EnvioUpdateInput:
  *       type: object
- *       description: Campos actualizables del envío. (En tu controller actual no valida enums; Swagger sí los declara).
+ *       description: |
+ *         Campos actualizables. El controller actual actualiza **si vienen definidos**.
+ *         Nota: el controller no valida enums; Swagger los declara para guiar al frontend.
  *       properties:
  *         fecha_envio:
  *           type: string
@@ -251,7 +259,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *     summary: Listar envíos
  *     description: |
  *       Lista envíos con filtros opcionales. Incluye relaciones mínimas:
- *       - `pedido` (id, estado, fecha_pedido)
+ *       - `pedido` (id, estado, fecha_pedido, fuente)
  *       - `venta` (id, fecha_venta, total_general, estado_pago)
  *
  *       Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
@@ -275,18 +283,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         schema:
  *           type: integer
  *         description: Filtrar por venta
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         description: Filtrar fecha_envio desde (inclusive)
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         description: Filtrar fecha_envio hasta (inclusive)
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *     responses:
  *       200:
  *         description: Lista de envíos
@@ -297,23 +295,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/EnvioConRelaciones"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/",
@@ -332,12 +318,7 @@ router.get(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Envío encontrado
@@ -355,23 +336,11 @@ router.get(
  *               noEncontrado:
  *                 value: { mensaje: "Envío no encontrado" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/:id",
@@ -386,7 +355,7 @@ router.get(
  *   post:
  *     summary: Registrar un envío
  *     description: |
- *       Crea un envío. Reglas principales del controller:
+ *       Crea un envío. Reglas del controller:
  *       - Debes indicar **al menos uno**: `id_pedido` o `id_venta`.
  *       - Si `id_pedido` viene, se valida que exista.
  *       - Si `id_venta` viene, se valida que exista.
@@ -433,7 +402,7 @@ router.get(
  *                 envio:
  *                   $ref: "#/components/schemas/EnvioConRelaciones"
  *       400:
- *         description: Datos inválidos (por ejemplo, falta id_pedido/id_venta o no existen)
+ *         description: Validación fallida (faltan refs o pedido/venta no existen)
  *         content:
  *           application/json:
  *             schema:
@@ -446,23 +415,11 @@ router.get(
  *               ventaNoExiste:
  *                 value: { mensaje: "La venta indicada no existe" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",
@@ -477,19 +434,14 @@ router.post(
  *   patch:
  *     summary: Actualizar un envío (estado, costos, datos de entrega)
  *     description: |
- *       Actualiza un envío por ID. En tu controller se actualizan campos **si vienen definidos**.
+ *       Actualiza un envío por ID. El controller actual actualiza campos **si vienen definidos**.
  *
  *       Roles permitidos: **ADMINISTRADOR**, **VENDEDOR**
  *     tags: [Envios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: true
  *       content:
@@ -529,23 +481,11 @@ router.post(
  *               noEncontrado:
  *                 value: { mensaje: "Envío no encontrado" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.patch(
   "/:id",

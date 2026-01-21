@@ -8,22 +8,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: Gastos
- *   description: Registro y consulta de gastos del negocio (solo ADMINISTRADOR)
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     Gasto:
  *       type: object
  *       properties:
@@ -55,11 +41,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         metodo_pago:
  *           type: string
  *           nullable: true
- *           example: "EFECTIVO"
+ *           example: "TRANSFERENCIA"
  *         referencia_pago:
  *           type: string
  *           nullable: true
- *           example: "REC-001"
+ *           example: "TRX-123"
  *         es_recurrente:
  *           type: boolean
  *           example: true
@@ -120,69 +106,92 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *         id_categoria_gasto:
  *           type: integer
  *           nullable: true
+ *           example: 2
  *         fecha_gasto:
  *           type: string
  *           format: date
+ *           example: "2026-01-20"
  *         tipo:
  *           type: string
  *           enum: [FIJO, VARIABLE]
+ *           example: "FIJO"
  *         descripcion:
  *           type: string
+ *           example: "Renta del local"
  *         monto:
  *           type: number
  *           format: float
+ *           example: 2500
  *         metodo_pago:
  *           type: string
  *           nullable: true
+ *           example: "TRANSFERENCIA"
  *         referencia_pago:
  *           type: string
  *           nullable: true
+ *           example: "TRX-123"
  *         es_recurrente:
  *           type: boolean
+ *           example: true
  *         periodo_recurrencia:
  *           type: string
  *           nullable: true
  *           enum: [MENSUAL, TRIMESTRAL, ANUAL]
+ *           example: "MENSUAL"
  *         notas:
  *           type: string
  *           nullable: true
+ *           example: "Pagado puntual"
  *
  *     GastoUpdateInput:
  *       type: object
  *       description: |
  *         Campos opcionales para actualización parcial.
- *         Nota: el controller permite `id_categoria_gasto = null` para desasociar categoría.
+ *         - El controller permite `id_categoria_gasto = null` para desasociar categoría.
+ *         - Si envías `tipo`, debe ser FIJO o VARIABLE.
+ *         - Si `es_recurrente` pasa a false, el controller limpia `periodo_recurrencia` a null.
+ *         - OJO: si envías `periodo_recurrencia` explícitamente, el controller lo asigna tal cual (aunque `es_recurrente` sea false).
  *       properties:
  *         id_categoria_gasto:
  *           oneOf:
  *             - type: integer
+ *               example: 2
  *             - type: "null"
  *         fecha_gasto:
  *           type: string
  *           format: date
+ *           example: "2026-01-22"
  *         tipo:
  *           type: string
  *           enum: [FIJO, VARIABLE]
+ *           example: "VARIABLE"
  *         descripcion:
  *           type: string
+ *           example: "Gasolina"
  *         monto:
  *           type: number
  *           format: float
+ *           example: 350
  *         metodo_pago:
  *           type: string
  *           nullable: true
+ *           example: "EFECTIVO"
  *         referencia_pago:
  *           type: string
  *           nullable: true
+ *           example: "REC-001"
  *         es_recurrente:
  *           type: boolean
+ *           example: false
  *         periodo_recurrencia:
  *           type: string
  *           nullable: true
  *           enum: [MENSUAL, TRIMESTRAL, ANUAL]
+ *           example: "MENSUAL"
  *         notas:
  *           type: string
  *           nullable: true
+ *           example: "Ajuste"
  *
  *     GastoCreateResponse:
  *       type: object
@@ -236,12 +245,14 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           example: 1000.0
  *         por_categoria:
  *           type: object
+ *           description: "Mapa por nombre de categoría. Si el gasto no tiene categoría, usa la clave `SIN_CATEGORIA`."
  *           additionalProperties:
  *             type: number
  *             format: float
  *           example:
  *             Renta: 2500
  *             Gasolina: 1000
+ *             SIN_CATEGORIA: 0
  *         cantidad_registros:
  *           type: integer
  *           example: 12
@@ -267,20 +278,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: fecha_desde
- *         schema:
- *           type: string
- *           format: date
- *         description: Fecha gasto desde (inclusive)
- *         example: "2026-01-01"
- *       - in: query
- *         name: fecha_hasta
- *         schema:
- *           type: string
- *           format: date
- *         description: Fecha gasto hasta (inclusive)
- *         example: "2026-01-31"
+ *       - $ref: "#/components/parameters/FechaDesdeQuery"
+ *       - $ref: "#/components/parameters/FechaHastaQuery"
  *       - in: query
  *         name: tipo
  *         schema:
@@ -304,23 +303,11 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/GastoConRelaciones"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/",
@@ -336,11 +323,11 @@ router.get(
  *     summary: Resumen mensual de gastos
  *     description: |
  *       Calcula un resumen para un mes:
- *       - total, total_fijo, total_variable
+ *       - `total`, `total_fijo`, `total_variable`
  *       - acumulado por categoría (por nombre)
- *       - cantidad_registros
+ *       - `cantidad_registros`
  *
- *       Si no se envían `anio` y/o `mes`, usa el mes actual del servidor.
+ *       Si no envías `anio` y/o `mes`, usa el mes actual del servidor.
  *
  *       Roles: **ADMINISTRADOR**
  *     tags: [Gastos]
@@ -369,23 +356,11 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/GastosResumenMensualResponse"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/resumen-mensual",
@@ -409,12 +384,7 @@ router.get(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 15
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Gasto encontrado
@@ -423,32 +393,13 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/GastoConRelaciones"
  *       404:
- *         description: No encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
- *             examples:
- *               noEncontrado:
- *                 value: { mensaje: "Gasto no encontrado" }
+ *         $ref: "#/components/responses/NotFoundError"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get(
   "/:id",
@@ -503,38 +454,13 @@ router.get(
  *             schema:
  *               $ref: "#/components/schemas/GastoCreateResponse"
  *       400:
- *         description: Validación
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
- *             examples:
- *               faltanCampos:
- *                 value: { mensaje: "fecha_gasto, tipo, descripcion y monto son obligatorios" }
- *               tipoInvalido:
- *                 value: { mensaje: "tipo debe ser \"FIJO\" o \"VARIABLE\"" }
- *               categoriaNoExiste:
- *                 value: { mensaje: "La categoría de gasto indicada no existe" }
- *               recurrenciaSinPeriodo:
- *                 value: { mensaje: "Si es_recurrente es true, periodo_recurrencia es obligatorio" }
+ *         $ref: "#/components/responses/ValidationError"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/",
@@ -556,20 +482,13 @@ router.post(
  *       - Si `id_categoria_gasto` es un número: valida que exista.
  *       - Si se manda `tipo`, debe ser FIJO o VARIABLE.
  *       - Si `es_recurrente` pasa a false, `periodo_recurrencia` se limpia a null.
- *       - OJO: el controller **no** valida que `periodo_recurrencia` sea obligatorio cuando `es_recurrente=true` en PATCH
- *         (si quieres “blindarlo”, ahí conviene agregar esa validación).
  *
  *       Roles: **ADMINISTRADOR**
  *     tags: [Gastos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 15
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: true
  *       content:
@@ -591,43 +510,15 @@ router.post(
  *             schema:
  *               $ref: "#/components/schemas/GastoUpdateResponse"
  *       400:
- *         description: Validación
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
- *             examples:
- *               tipoInvalido:
- *                 value: { mensaje: "tipo debe ser \"FIJO\" o \"VARIABLE\"" }
- *               categoriaNoExiste:
- *                 value: { mensaje: "La categoría de gasto indicada no existe" }
+ *         $ref: "#/components/responses/ValidationError"
  *       404:
- *         description: No encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
- *             examples:
- *               noEncontrado:
- *                 value: { mensaje: "Gasto no encontrado" }
+ *         $ref: "#/components/responses/NotFoundError"
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.patch(
   "/:id",

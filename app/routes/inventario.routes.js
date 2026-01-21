@@ -8,22 +8,8 @@ const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
  * @swagger
- * tags:
- *   name: Inventario
- *   description: Consulta y ajustes de inventario
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
- *
  *     ProductoResumen:
  *       type: object
  *       nullable: true
@@ -122,7 +108,9 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           example: 2
  *         cantidad:
  *           type: integer
- *           description: Positivo suma, negativo resta
+ *           description: |
+ *             Positivo suma, negativo resta.
+ *             **Nota del controller:** si `cantidad` es 0, se rechaza porque valida con `if (!cantidad)`.
  *           example: -5
  *         motivo:
  *           type: string
@@ -153,8 +141,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *
  *       Filtros opcionales: `id_producto`, `id_ubicacion`.
  *
- *       Nota: en tu router actual **no hay autenticación** para este GET.
- *       Si deseas que sea privado, agrega `autenticacionMiddleware` y roles.
+ *       Este endpoint está **público** en tu implementación actual (sin JWT).
  *     tags: [Inventario]
  *     security: []
  *     parameters:
@@ -180,11 +167,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *               items:
  *                 $ref: "#/components/schemas/InventarioSaldoConRelaciones"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.get("/", inventarioController.listarSaldos);
 
@@ -200,11 +183,15 @@ router.get("/", inventarioController.listarSaldos);
  *       - Obligatorios: `id_producto`, `id_ubicacion`, `cantidad`
  *       - Valida existencia de producto y ubicación
  *       - Si no existe saldo, lo crea con 0/0 y luego aplica el ajuste
- *       - Crea un movimiento con `tipo_movimiento = "AJUSTE"` y `referencia_tipo = "AJUSTE_MANUAL"`
+ *       - Crea un movimiento con:
+ *         - `tipo_movimiento = "AJUSTE"`
+ *         - `referencia_tipo = "AJUSTE_MANUAL"`
+ *         - `id_referencia = null`
+ *         - `notas = motivo || null`
  *
  *       Roles: **ADMINISTRADOR**
  *
- *       ⚠️ Nota de “blindaje”: tu controller permite que el saldo quede negativo si `cantidad` es negativa.
+ *       ⚠️ Nota de blindaje: el controller permite que el saldo quede negativo si `cantidad` es negativa.
  *       Si no quieres negativos, valida antes y devuelve 400.
  *     tags: [Inventario]
  *     security:
@@ -230,7 +217,7 @@ router.get("/", inventarioController.listarSaldos);
  *             schema:
  *               $ref: "#/components/schemas/InventarioAjusteResponse"
  *       400:
- *         description: Validación
+ *         description: Validación (según controller)
  *         content:
  *           application/json:
  *             schema:
@@ -243,23 +230,11 @@ router.get("/", inventarioController.listarSaldos);
  *               ubicacionNoExiste:
  *                 value: { mensaje: "La ubicación no existe" }
  *       401:
- *         description: No autenticado / token inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos (solo ADMINISTRADOR)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ForbiddenError"
  *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/ErrorResponse"
+ *         $ref: "#/components/responses/ServerError"
  */
 router.post(
   "/ajuste",
