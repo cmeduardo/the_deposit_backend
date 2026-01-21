@@ -1,6 +1,7 @@
 require("dotenv").config();
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
+
 const RUTA = process.env.BASE_URL;
 
 const options = {
@@ -15,6 +16,7 @@ const options = {
     servers: [
       {
         url: RUTA,
+        description: "Servidor principal",
       },
     ],
     components: {
@@ -26,13 +28,7 @@ const options = {
         },
       },
     },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
   },
-  // Archivos donde leer anotaciones JSDoc de Swagger
   apis: ["./app/routes/*.js"],
 };
 

@@ -13,6 +13,13 @@ const catalogoController = require("../controllers/catalogo.controller");
  * @swagger
  * components:
  *   schemas:
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         mensaje:
+ *           type: string
+ *           example: "Error interno del servidor"
+ *
  *     CatalogoCategoria:
  *       type: object
  *       nullable: true
@@ -23,6 +30,10 @@ const catalogoController = require("../controllers/catalogo.controller");
  *         nombre:
  *           type: string
  *           example: "BEBIDAS"
+ *         descripcion:
+ *           type: string
+ *           nullable: true
+ *           example: "Gaseosas, jugos y bebidas energéticas"
  *
  *     CatalogoPresentacion:
  *       type: object
@@ -30,6 +41,7 @@ const catalogoController = require("../controllers/catalogo.controller");
  *         id:
  *           type: integer
  *           example: 10
+ *           description: "Este ID es el `id_presentacion_producto` que se usa para agregar al carrito."
  *         id_producto:
  *           type: integer
  *           example: 1
@@ -51,21 +63,20 @@ const catalogoController = require("../controllers/catalogo.controller");
  *           type: integer
  *           example: 24
  *         precio_venta_por_defecto:
- *           type: number
- *           format: float
+ *           type: string
  *           nullable: true
- *           example: 150.00
+ *           example: "150.00"
  *         precio_minimo:
- *           type: number
- *           format: float
+ *           type: string
  *           nullable: true
- *           example: 140.00
+ *           example: "140.00"
  *         activo:
  *           type: boolean
  *           example: true
  *
- *     CatalogoProducto:
+ *     CatalogoProductoCard:
  *       type: object
+ *       description: "Producto para listado tipo cards (liviano: NO incluye presentaciones)."
  *       properties:
  *         id:
  *           type: integer
@@ -85,37 +96,107 @@ const catalogoController = require("../controllers/catalogo.controller");
  *           type: string
  *           nullable: true
  *           example: "https://cdn.midominio.com/productos/coca600.png"
- *         es_perecedero:
- *           type: boolean
- *           example: false
  *         stock_minimo:
  *           type: integer
  *           example: 10
- *         activo:
+ *         categoria:
+ *           $ref: "#/components/schemas/CatalogoCategoria"
+ *         precio_desde:
+ *           type: string
+ *           nullable: true
+ *           example: "6.50"
+ *           description: "Precio mínimo entre presentaciones activas (COALESCE(precio_defecto, precio_minimo))."
+ *         precio_hasta:
+ *           type: string
+ *           nullable: true
+ *           example: "150.00"
+ *           description: "Precio máximo entre presentaciones activas (COALESCE(precio_defecto, precio_minimo))."
+ *         tiene_precio:
  *           type: boolean
  *           example: true
+ *
+ *     CatalogoProductoDetalle:
+ *       type: object
+ *       description: "Producto para página de detalle (incluye presentaciones activas)."
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 1
+ *         nombre:
+ *           type: string
+ *           example: "Coca Cola 600ml"
+ *         descripcion:
+ *           type: string
+ *           nullable: true
+ *           example: "Bebida gaseosa 600ml"
+ *         marca:
+ *           type: string
+ *           nullable: true
+ *           example: "Coca Cola"
+ *         url_imagen:
+ *           type: string
+ *           nullable: true
+ *           example: "https://cdn.midominio.com/productos/coca600.png"
+ *         stock_minimo:
+ *           type: integer
+ *           example: 10
  *         categoria:
  *           $ref: "#/components/schemas/CatalogoCategoria"
  *         presentaciones:
  *           type: array
+ *           description: "Presentaciones activas (variantes/SKUs). Usa `presentaciones[].id` para agregar al carrito."
  *           items:
  *             $ref: "#/components/schemas/CatalogoPresentacion"
  *
- *     ErrorRespuesta:
+ *     CatalogoProductosResponse:
  *       type: object
  *       properties:
- *         mensaje:
- *           type: string
- *           example: "Error interno del servidor"
+ *         meta:
+ *           type: object
+ *           properties:
+ *             page:
+ *               type: integer
+ *               example: 1
+ *             limit:
+ *               type: integer
+ *               example: 20
+ *             total:
+ *               type: integer
+ *               example: 125
+ *             total_pages:
+ *               type: integer
+ *               example: 7
+ *             sort:
+ *               type: string
+ *               example: "nombre"
+ *             order:
+ *               type: string
+ *               example: "asc"
+ *             filtros:
+ *               type: object
+ *               additionalProperties: true
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: "#/components/schemas/CatalogoProductoCard"
  */
 
 /**
  * @swagger
  * /api/catalogo/productos:
  *   get:
- *     summary: Listar productos públicos para la tienda en línea
+ *     summary: Listar productos del catálogo (cards por producto)
+ *     description: |
+ *       Lista productos **activos** del catálogo en formato **card** (respuesta liviana).
+ *
+ *       Incluye:
+ *       - `precio_desde` / `precio_hasta` (calculados desde presentaciones activas)
+ *       - `categoria`
+ *
+ *       No incluye `presentaciones` para ahorrar recursos.
+ *       Para variantes usa: `GET /api/catalogo/productos/{id}`.
  *     tags: [Catalogo]
- *     security: []   # <- IMPORTANTE (no JWT)
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: texto
@@ -130,36 +211,125 @@ const catalogoController = require("../controllers/catalogo.controller");
  *         description: Filtrar por categoría
  *         example: 1
  *       - in: query
- *         name: es_perecedero
+ *         name: marca
  *         schema:
- *           type: boolean
- *         description: Filtrar por perecederos
- *         example: false
+ *           type: string
+ *         description: Filtrar por marca (ILIKE)
+ *         example: "Coca"
+ *       - in: query
+ *         name: precio_min
+ *         schema:
+ *           type: number
+ *         description: Precio mínimo (según COALESCE(precio_defecto, precio_minimo))
+ *         example: 5
+ *       - in: query
+ *         name: precio_max
+ *         schema:
+ *           type: number
+ *         description: Precio máximo
+ *         example: 200
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Página
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *         description: Tamaño de página (máx 100)
+ *         example: 20
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [nombre, precio]
+ *           default: nombre
+ *         description: Ordenar por nombre o por precio (precio_desde)
+ *         example: "precio"
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Dirección del ordenamiento
+ *         example: "asc"
  *     responses:
  *       200:
- *         description: Lista de productos activos con presentaciones activas y su categoría (si aplica)
+ *         description: Lista paginada de productos (cards)
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: "#/components/schemas/CatalogoProducto"
+ *               $ref: "#/components/schemas/CatalogoProductosResponse"
  *       500:
  *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:
- *               $ref: "#/components/schemas/ErrorRespuesta"
+ *               $ref: "#/components/schemas/ErrorResponse"
  */
 router.get("/productos", catalogoController.listarProductosCatalogo);
+
+/**
+ * @swagger
+ * /api/catalogo/productos/{id}:
+ *   get:
+ *     summary: Obtener detalle público de un producto por ID (página de producto)
+ *     description: |
+ *       Devuelve un producto **activo** con:
+ *       - `categoria` (si aplica y está activa)
+ *       - `presentaciones` **activas** (variantes/SKUs)
+ *
+ *       **Relación con carrito:**
+ *       - Usa `presentaciones[].id` como `id_presentacion_producto` en `POST /api/carrito/items`.
+ *     tags: [Catalogo]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Producto encontrado con presentaciones activas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/CatalogoProductoDetalle"
+ *       404:
+ *         description: Producto no encontrado o inactivo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               noEncontrado:
+ *                 value: { mensaje: "Producto no encontrado" }
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/ErrorResponse"
+ */
+router.get("/productos/:id", catalogoController.obtenerProductoCatalogoPorId);
 
 /**
  * @swagger
  * /api/catalogo/presentaciones/{id}:
  *   get:
  *     summary: Obtener detalle público de una presentación por ID
+ *     description: |
+ *       Devuelve una presentación **activa** con su producto **activo** y categoría (si aplica).
  *     tags: [Catalogo]
- *     security: []   # <- IMPORTANTE (no JWT)
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -169,7 +339,7 @@ router.get("/productos", catalogoController.listarProductosCatalogo);
  *         example: 10
  *     responses:
  *       200:
- *         description: Presentación activa encontrada con su producto y categoría
+ *         description: Presentación encontrada
  *         content:
  *           application/json:
  *             schema:
@@ -178,20 +348,22 @@ router.get("/productos", catalogoController.listarProductosCatalogo);
  *                 - type: object
  *                   properties:
  *                     producto:
- *                       allOf:
- *                         - $ref: "#/components/schemas/CatalogoProducto"
+ *                       $ref: "#/components/schemas/CatalogoProductoDetalle"
  *       404:
- *         description: Presentación no encontrada o inactiva
+ *         description: Presentación no encontrada
  *         content:
  *           application/json:
  *             schema:
- *               $ref: "#/components/schemas/ErrorRespuesta"
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               noEncontrada:
+ *                 value: { mensaje: "Presentación no encontrada" }
  *       500:
  *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:
- *               $ref: "#/components/schemas/ErrorRespuesta"
+ *               $ref: "#/components/schemas/ErrorResponse"
  */
 router.get("/presentaciones/:id", catalogoController.obtenerPresentacionCatalogo);
 
