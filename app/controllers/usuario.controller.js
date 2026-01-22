@@ -4,11 +4,27 @@ const Usuario = db.usuarios;
 
 const ROLES_VALIDOS = ["ADMINISTRADOR", "VENDEDOR", "CLIENTE"];
 
+// Campos públicos (sin contraseña)
+const ATRIBUTOS_PUBLICOS = [
+  "id",
+  "nombre",
+  "correo",
+  "rol",
+  "activo",
+  "telefono",
+  "nit",
+  "direccion",
+  "dpi",
+  "created_at",
+  "updated_at",
+];
+
 // GET /api/usuarios
 const listarUsuarios = async (req, res) => {
   try {
     const usuarios = await Usuario.findAll({
-      attributes: ["id", "nombre", "correo", "rol", "activo", "createdAt", "updatedAt"],
+      attributes: ATRIBUTOS_PUBLICOS,
+      order: [["id", "DESC"]],
     });
 
     return res.json(usuarios);
@@ -24,7 +40,7 @@ const obtenerUsuarioPorId = async (req, res) => {
     const { id } = req.params;
 
     const usuario = await Usuario.findByPk(id, {
-      attributes: ["id", "nombre", "correo", "rol", "activo", "createdAt", "updatedAt"],
+      attributes: ATRIBUTOS_PUBLICOS,
     });
 
     if (!usuario) {
@@ -42,7 +58,17 @@ const obtenerUsuarioPorId = async (req, res) => {
 // Crea usuarios de cualquier rol (ADMINISTRADOR, VENDEDOR, CLIENTE)
 const crearUsuario = async (req, res) => {
   try {
-    const { nombre, correo, contrasena, rol, activo } = req.body;
+    const {
+      nombre,
+      correo,
+      contrasena,
+      rol,
+      activo,
+      telefono,
+      nit,
+      direccion,
+      dpi,
+    } = req.body;
 
     if (!nombre || !correo || !contrasena || !rol) {
       return res.status(400).json({
@@ -58,9 +84,7 @@ const crearUsuario = async (req, res) => {
 
     const existente = await Usuario.findOne({ where: { correo } });
     if (existente) {
-      return res
-        .status(409)
-        .json({ mensaje: "Ya existe un usuario con ese correo" });
+      return res.status(409).json({ mensaje: "Ya existe un usuario con ese correo" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -72,6 +96,11 @@ const crearUsuario = async (req, res) => {
       contrasena_hash,
       rol,
       activo: activo !== undefined ? activo : true,
+
+      telefono: telefono || null,
+      nit: nit !== undefined && nit !== null && String(nit).trim() !== "" ? String(nit).trim() : "CF",
+      direccion: direccion || null,
+      dpi: dpi || null,
     });
 
     return res.status(201).json({
@@ -82,6 +111,10 @@ const crearUsuario = async (req, res) => {
         correo: usuario.correo,
         rol: usuario.rol,
         activo: usuario.activo,
+        telefono: usuario.telefono,
+        nit: usuario.nit,
+        direccion: usuario.direccion,
+        dpi: usuario.dpi,
       },
     });
   } catch (err) {
@@ -95,7 +128,17 @@ const crearUsuario = async (req, res) => {
 const actualizarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, correo, rol, activo, contrasena } = req.body;
+    const {
+      nombre,
+      correo,
+      rol,
+      activo,
+      contrasena,
+      telefono,
+      nit,
+      direccion,
+      dpi,
+    } = req.body;
 
     const usuario = await Usuario.findByPk(id);
 
@@ -112,9 +155,7 @@ const actualizarUsuario = async (req, res) => {
     if (correo && correo !== usuario.correo) {
       const existente = await Usuario.findOne({ where: { correo } });
       if (existente) {
-        return res
-          .status(409)
-          .json({ mensaje: "Ya existe un usuario con ese correo" });
+        return res.status(409).json({ mensaje: "Ya existe un usuario con ese correo" });
       }
     }
 
@@ -122,6 +163,17 @@ const actualizarUsuario = async (req, res) => {
     if (correo !== undefined) usuario.correo = correo;
     if (rol !== undefined) usuario.rol = rol;
     if (activo !== undefined) usuario.activo = activo;
+
+    if (telefono !== undefined) usuario.telefono = telefono || null;
+
+    // nit: si lo mandan vacío/null, lo forzamos a CF (porque el modelo no permite null)
+    if (nit !== undefined) {
+      usuario.nit =
+        nit !== null && String(nit).trim() !== "" ? String(nit).trim() : "CF";
+    }
+
+    if (direccion !== undefined) usuario.direccion = direccion || null;
+    if (dpi !== undefined) usuario.dpi = dpi || null;
 
     if (contrasena) {
       const salt = await bcrypt.genSalt(10);
@@ -138,6 +190,10 @@ const actualizarUsuario = async (req, res) => {
         correo: usuario.correo,
         rol: usuario.rol,
         activo: usuario.activo,
+        telefono: usuario.telefono,
+        nit: usuario.nit,
+        direccion: usuario.direccion,
+        dpi: usuario.dpi,
       },
     });
   } catch (err) {
@@ -176,6 +232,10 @@ const cambiarEstadoUsuario = async (req, res) => {
         correo: usuario.correo,
         rol: usuario.rol,
         activo: usuario.activo,
+        telefono: usuario.telefono,
+        nit: usuario.nit,
+        direccion: usuario.direccion,
+        dpi: usuario.dpi,
       },
     });
   } catch (err) {

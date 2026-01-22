@@ -6,10 +6,11 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
 const rolMiddleware = require("../middlewares/rol.middleware");
 
 /**
- * @swagger
- * tags:
- *   name: Unidades
- *   description: Gestión de unidades de medida
+ * IMPORTANTE (v0-friendly)
+ * - NO redefinimos tags acá (ya están en swagger.js)
+ * - NO redefinimos ErrorResponse global (ya está en swagger.js)
+ * - Usamos mensajes reales del controller en examples
+ * - En schemas usamos underscored timestamps (created_at/updated_at) porque tu Sequelize usa underscored: true
  */
 
 /**
@@ -30,18 +31,21 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           example: "Unidad"
  *         descripcion:
  *           type: string
+ *           nullable: true
  *           example: "Unidad estándar"
  *         activo:
  *           type: boolean
  *           example: true
- *         createdAt:
+ *         created_at:
  *           type: string
  *           format: date-time
  *           nullable: true
- *         updatedAt:
+ *           example: "2026-01-21T10:20:30.000Z"
+ *         updated_at:
  *           type: string
  *           format: date-time
  *           nullable: true
+ *           example: "2026-01-21T10:20:30.000Z"
  *
  *     UnidadCreateInput:
  *       type: object
@@ -55,6 +59,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           example: "Kilogramo"
  *         descripcion:
  *           type: string
+ *           nullable: true
  *           example: "Unidad de masa"
  *         activo:
  *           type: boolean
@@ -62,6 +67,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *
  *     UnidadUpdateInput:
  *       type: object
+ *       description: Campos opcionales para actualización parcial.
  *       properties:
  *         codigo:
  *           type: string
@@ -71,26 +77,29 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *           example: "Litro"
  *         descripcion:
  *           type: string
+ *           nullable: true
  *           example: "Unidad de volumen"
  *         activo:
  *           type: boolean
  *           example: true
  *
- *     ApiMensajeUnidad:
+ *     UnidadCreateResponse:
  *       type: object
  *       properties:
  *         mensaje:
  *           type: string
  *           example: "Unidad creada correctamente"
  *         unidad:
- *           $ref: '#/components/schemas/Unidad'
+ *           $ref: "#/components/schemas/Unidad"
  *
- *     ApiError:
+ *     UnidadUpdateResponse:
  *       type: object
  *       properties:
  *         mensaje:
  *           type: string
- *           example: "Error interno del servidor"
+ *           example: "Unidad actualizada correctamente"
+ *         unidad:
+ *           $ref: "#/components/schemas/Unidad"
  */
 
 /**
@@ -99,6 +108,7 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *   get:
  *     summary: Listar unidades
  *     tags: [Unidades]
+ *     security: []
  *     responses:
  *       200:
  *         description: Lista de unidades
@@ -107,13 +117,16 @@ const rolMiddleware = require("../middlewares/rol.middleware");
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Unidad'
+ *                 $ref: "#/components/schemas/Unidad"
  *       500:
- *         description: Error interno
+ *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               error:
+ *                 value: { mensaje: "Error interno del servidor" }
  */
 router.get("/", unidadController.listarUnidades);
 
@@ -123,34 +136,34 @@ router.get("/", unidadController.listarUnidades);
  *   get:
  *     summary: Obtener una unidad por ID
  *     tags: [Unidades]
+ *     security: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     responses:
  *       200:
  *         description: Unidad encontrada
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Unidad'
+ *               $ref: "#/components/schemas/Unidad"
  *       404:
  *         description: Unidad no encontrada
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *             example:
- *               mensaje: "Unidad no encontrada"
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               noEncontrada:
+ *                 value: { mensaje: "Unidad no encontrada" }
  *       500:
- *         description: Error interno
+ *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               error:
+ *                 value: { mensaje: "Error interno del servidor" }
  */
 router.get("/:id", unidadController.obtenerUnidadPorId);
 
@@ -167,10 +180,9 @@ router.get("/:id", unidadController.obtenerUnidadPorId);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UnidadCreateInput'
+ *             $ref: "#/components/schemas/UnidadCreateInput"
  *           examples:
  *             crearUnidad:
- *               summary: Crear unidad
  *               value:
  *                 codigo: "CAJ"
  *                 nombre: "Caja"
@@ -182,33 +194,48 @@ router.get("/:id", unidadController.obtenerUnidadPorId);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiMensajeUnidad'
+ *               $ref: "#/components/schemas/UnidadCreateResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Unidad creada correctamente"
+ *                   unidad:
+ *                     id: 1
+ *                     codigo: "CAJ"
+ *                     nombre: "Caja"
+ *                     descripcion: "Caja cerrada"
+ *                     activo: true
  *       400:
  *         description: Datos inválidos
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *             example:
- *               mensaje: "Código y nombre son obligatorios"
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               faltanCampos:
+ *                 value: { mensaje: "Código y nombre son obligatorios" }
  *       401:
- *         description: No autenticado
+ *         $ref: "#/components/responses/UnauthorizedError"
  *       403:
- *         description: Sin permisos
+ *         $ref: "#/components/responses/ForbiddenError"
  *       409:
  *         description: Código duplicado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *             example:
- *               mensaje: "Ya existe una unidad con ese código"
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               duplicado:
+ *                 value: { mensaje: "Ya existe una unidad con ese código" }
  *       500:
- *         description: Error interno
+ *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               error:
+ *                 value: { mensaje: "Error interno del servidor" }
  */
 router.post(
   "/",
@@ -221,26 +248,20 @@ router.post(
  * @swagger
  * /api/unidades/{id}:
  *   patch:
- *     summary: Actualizar una unidad
+ *     summary: Actualizar una unidad (parcial)
  *     tags: [Unidades]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *       - $ref: "#/components/parameters/IdPathParam"
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UnidadUpdateInput'
+ *             $ref: "#/components/schemas/UnidadUpdateInput"
  *           examples:
  *             actualizarUnidad:
- *               summary: Actualizar unidad
  *               value:
  *                 nombre: "Unidad (actualizada)"
  *                 activo: true
@@ -250,35 +271,48 @@ router.post(
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiMensajeUnidad'
- *       400:
- *         description: Datos inválidos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       401:
- *         description: No autenticado
- *       403:
- *         description: Sin permisos
+ *               $ref: "#/components/schemas/UnidadUpdateResponse"
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   mensaje: "Unidad actualizada correctamente"
+ *                   unidad:
+ *                     id: 1
+ *                     codigo: "UND"
+ *                     nombre: "Unidad (actualizada)"
+ *                     descripcion: "Unidad estándar"
+ *                     activo: true
  *       404:
  *         description: Unidad no encontrada
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               noEncontrada:
+ *                 value: { mensaje: "Unidad no encontrada" }
+ *       401:
+ *         $ref: "#/components/responses/UnauthorizedError"
+ *       403:
+ *         $ref: "#/components/responses/ForbiddenError"
  *       409:
  *         description: Código duplicado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               duplicado:
+ *                 value: { mensaje: "Ya existe una unidad con ese código" }
  *       500:
- *         description: Error interno
+ *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *               $ref: "#/components/schemas/ErrorResponse"
+ *             examples:
+ *               error:
+ *                 value: { mensaje: "Error interno del servidor" }
  */
 router.patch(
   "/:id",

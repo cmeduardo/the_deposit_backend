@@ -54,9 +54,9 @@ const options = {
       { name: "Health", description: "Estado del servicio y conexión a base de datos" },
       { name: "Inventario", description: "Consulta y ajustes de inventario" },
       { name: "KPI", description: "Indicadores clave" },
-
       { name: "Pedidos", description: "Gestión de pedidos" },
       { name: "PresentacionesProductos", description: "Gestión de presentaciones (SKU)",},
+      
       { name: "Productos", description: "Gestión de productos" },
       { name: "Proveedores", description: "Gestión de proveedores" },
       { name: "UbicacionesInventario", description: "Gestión de ubicaciones de inventario",},
