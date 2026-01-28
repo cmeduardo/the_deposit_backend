@@ -11,6 +11,8 @@ const { Op } = db.Sequelize;
 // helpers
 const getFechaHoy = () => new Date().toISOString().slice(0, 10);
 
+const TIPOS_ENTREGA_VALIDOS = ["DOMICILIO", "RECOGER_EN_LOCAL"];
+
 // GET /api/pedidos
 // Incluye detalles -> presentacion -> producto
 const listarPedidos = async (req, res) => {
@@ -18,22 +20,17 @@ const listarPedidos = async (req, res) => {
     const { estado, id_cliente, fecha_desde, fecha_hasta } = req.query;
     const where = {};
 
-    // filtro estado
     if (estado) where.estado = estado;
 
-    // filtro rango fechas sobre fecha_pedido
     if (fecha_desde || fecha_hasta) {
       where.fecha_pedido = {};
       if (fecha_desde) where.fecha_pedido[Op.gte] = fecha_desde;
       if (fecha_hasta) where.fecha_pedido[Op.lte] = fecha_hasta;
     }
 
-    // regla por rol
     if (req.usuario.rol === "CLIENTE") {
-      // cliente solo ve lo suyo (ignora id_cliente aunque lo envíen)
       where.id_usuario_cliente = req.usuario.id;
     } else {
-      // roles internos: si mandan id_cliente, filtra
       if (id_cliente) where.id_usuario_cliente = id_cliente;
     }
 
@@ -57,13 +54,7 @@ const listarPedidos = async (req, res) => {
             {
               model: Presentacion,
               as: "presentacion",
-              include: [
-                {
-                  model: Producto,
-                  as: "producto",
-                  attributes: ["id", "nombre"],
-                },
-              ],
+              include: [{ model: Producto, as: "producto", attributes: ["id", "nombre"] }],
             },
           ],
         },
@@ -88,16 +79,8 @@ const obtenerPedidoPorId = async (req, res) => {
 
     const pedido = await Pedido.findByPk(id, {
       include: [
-        {
-          model: Usuario,
-          as: "cliente_usuario",
-          attributes: ["id", "nombre", "correo"],
-        },
-        {
-          model: Ubicacion,
-          as: "ubicacion_salida",
-          attributes: ["id", "nombre", "tipo"],
-        },
+        { model: Usuario, as: "cliente_usuario", attributes: ["id", "nombre", "correo"] },
+        { model: Ubicacion, as: "ubicacion_salida", attributes: ["id", "nombre", "tipo"] },
         {
           model: DetallePedido,
           as: "detalles",
@@ -105,20 +88,11 @@ const obtenerPedidoPorId = async (req, res) => {
             {
               model: Presentacion,
               as: "presentacion",
-              include: [
-                {
-                  model: Producto,
-                  as: "producto",
-                  attributes: ["id", "nombre"],
-                },
-              ],
+              include: [{ model: Producto, as: "producto", attributes: ["id", "nombre"] }],
             },
           ],
         },
-        {
-          model: db.ventas,
-          as: "venta",
-        },
+        { model: db.ventas, as: "venta" },
       ],
     });
 
@@ -126,7 +100,6 @@ const obtenerPedidoPorId = async (req, res) => {
       return res.status(404).json({ mensaje: "Pedido no encontrado" });
     }
 
-    // si es cliente, solo puede ver su propio pedido
     if (req.usuario.rol === "CLIENTE" && pedido.id_usuario_cliente !== req.usuario.id) {
       return res.status(403).json({ mensaje: "No tienes acceso a este pedido" });
     }
@@ -150,6 +123,13 @@ const crearPedido = async (req, res) => {
       cargo_envio,
       notas_cliente,
       detalles,
+
+      // ✅ checkout
+      tipo_entrega, // DOMICILIO | RECOGER_EN_LOCAL
+      direccion_entrega,
+      requiere_factura,
+      nit_factura,
+      nombre_factura,
     } = req.body;
 
     if (!Array.isArray(detalles) || detalles.length === 0) {
@@ -173,16 +153,65 @@ const crearPedido = async (req, res) => {
       id_usuario_cliente = req.usuario.id;
     }
 
+    let cliente = null;
     if (id_usuario_cliente) {
-      const cliente = await Usuario.findByPk(id_usuario_cliente);
+      cliente = await Usuario.findByPk(id_usuario_cliente);
       if (!cliente) {
         await t.rollback();
         return res.status(400).json({ mensaje: "El usuario cliente no existe" });
       }
     }
 
+    // ✅ Defaults
+    tipo_entrega = (tipo_entrega || "RECOGER_EN_LOCAL").toString().trim();
+    requiere_factura = requiere_factura !== undefined ? !!requiere_factura : false;
+
+    // ✅ Validar tipo_entrega
+    if (!TIPOS_ENTREGA_VALIDOS.includes(tipo_entrega)) {
+      await t.rollback();
+      return res.status(400).json({
+        mensaje: `tipo_entrega inválido. Valores permitidos: ${TIPOS_ENTREGA_VALIDOS.join(", ")}`,
+      });
+    }
+
+    // ✅ DOMICILIO: exige direccion_entrega o usa cliente.direccion como fallback
+    if (tipo_entrega === "DOMICILIO") {
+      const fallback = (cliente?.direccion || "").toString().trim();
+      direccion_entrega = (direccion_entrega || fallback || "").toString().trim();
+
+      if (!direccion_entrega) {
+        await t.rollback();
+        return res.status(400).json({
+          mensaje:
+            "direccion_entrega es obligatoria cuando tipo_entrega es DOMICILIO (o define direccion en el perfil del usuario).",
+        });
+      }
+    } else {
+      // ✅ RECOGER_EN_LOCAL: no guardamos dirección
+      direccion_entrega = null;
+    }
+
+    // Defaults generales
     fuente = fuente || (req.usuario.rol === "CLIENTE" ? "ONLINE" : "ADMIN");
     cargo_envio = cargo_envio !== undefined ? cargo_envio : 0;
+
+    // ✅ RECOGER_EN_LOCAL: fuerza cargo_envio = 0
+    if (tipo_entrega === "RECOGER_EN_LOCAL") {
+      cargo_envio = 0;
+    }
+
+    // ✅ FACTURA: nit_factura cae a cliente.nit o "CF"; nombre_factura cae a cliente.nombre
+    if (requiere_factura === true) {
+      const nitFallback = (cliente?.nit || "CF").toString().trim();
+      nit_factura = (nit_factura || nitFallback || "CF").toString().trim() || "CF";
+
+      const nombreFallback = (cliente?.nombre || null);
+      nombre_factura = (nombre_factura || nombreFallback || null);
+    } else {
+      // Limpio (tu modelo puede defaultear CF; dejamos explícito por claridad)
+      nit_factura = (nit_factura || "CF").toString().trim() || "CF";
+      nombre_factura = null;
+    }
 
     const presentacionIds = [...new Set(detalles.map((d) => d.id_presentacion_producto))];
 
@@ -197,11 +226,9 @@ const crearPedido = async (req, res) => {
       return res.status(400).json({ mensaje: "Una o más presentaciones de producto no existen" });
     }
 
-    // Map de presentación por id
     const mapaPresentaciones = {};
     presentaciones.forEach((p) => (mapaPresentaciones[p.id] = p));
 
-    // Calcular unidades base por producto y verificar stock libre
     const requeridoPorProducto = {};
 
     for (const det of detalles) {
@@ -222,7 +249,6 @@ const crearPedido = async (req, res) => {
       requeridoPorProducto[id_producto] = (requeridoPorProducto[id_producto] || 0) + cantidadBase;
     }
 
-    // Verificar stock libre para cada producto
     for (const idProductoStr of Object.keys(requeridoPorProducto)) {
       const id_producto = parseInt(idProductoStr, 10);
       const requeridoBase = requeridoPorProducto[id_producto];
@@ -245,7 +271,6 @@ const crearPedido = async (req, res) => {
       }
     }
 
-    // Crear pedido
     let subtotalProductos = 0;
 
     const pedido = await Pedido.create(
@@ -255,6 +280,14 @@ const crearPedido = async (req, res) => {
         fuente,
         estado: "PENDIENTE",
         fecha_pedido: getFechaHoy(),
+
+        // ✅ checkout
+        tipo_entrega,
+        direccion_entrega,
+        requiere_factura,
+        nit_factura,
+        nombre_factura,
+
         subtotal_productos: 0,
         cargo_envio,
         descuento_total: 0,
@@ -265,7 +298,6 @@ const crearPedido = async (req, res) => {
       { transaction: t }
     );
 
-    // Crear detalles y acumular subtotal
     for (const det of detalles) {
       const { id_presentacion_producto, cantidad_unidad_venta, precio_unitario } = det;
 
@@ -273,9 +305,6 @@ const crearPedido = async (req, res) => {
       const unidadesPorVenta = presentacion.unidades_por_unidad_venta || 1;
       const cantidadBase = cantidad_unidad_venta * unidadesPorVenta;
 
-      // Precio según lógica:
-      // - Si viene precio_unitario y el rol es ADMINISTRADOR o VENDEDOR: usarlo (MANUAL)
-      // - De lo contrario usar precio_venta_por_defecto de la presentación (SISTEMA)
       let precioFinal = presentacion.precio_venta_por_defecto;
       let origen_precio = "SISTEMA";
 
@@ -311,7 +340,6 @@ const crearPedido = async (req, res) => {
       );
     }
 
-    // Actualizar reservas en inventario
     for (const idProductoStr of Object.keys(requeridoPorProducto)) {
       const id_producto = parseInt(idProductoStr, 10);
       const requeridoBase = requeridoPorProducto[id_producto];
@@ -407,13 +435,11 @@ const cancelarPedido = async (req, res) => {
       });
     }
 
-    // Si es cliente, solo puede cancelar su propio pedido
     if (req.usuario.rol === "CLIENTE" && pedido.id_usuario_cliente !== req.usuario.id) {
       await t.rollback();
       return res.status(403).json({ mensaje: "No tienes permiso para cancelar este pedido" });
     }
 
-    // Revertir reservas
     for (const det of pedido.detalles) {
       const presentacion = det.presentacion;
       const id_producto = presentacion.id_producto;

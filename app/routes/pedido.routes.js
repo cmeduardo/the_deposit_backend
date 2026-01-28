@@ -23,6 +23,10 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *       type: string
  *       enum: [ONLINE, ADMIN, OTRO, TIENDA_EN_LINEA, DESDE_CARRITO]
  *
+ *     PedidoTipoEntrega:
+ *       type: string
+ *       enum: [DOMICILIO, RECOGER_EN_LOCAL]
+ *
  *     PedidoDetalleInput:
  *       type: object
  *       required: [id_presentacion_producto, cantidad_unidad_venta]
@@ -43,7 +47,7 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *
  *     PedidoCreateInput:
  *       type: object
- *       required: [id_ubicacion_salida, detalles]
+ *       required: [id_ubicacion_salida, detalles, tipo_entrega, requiere_factura]
  *       properties:
  *         id_usuario_cliente:
  *           type: integer
@@ -57,9 +61,39 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *           example: 2
  *         fuente:
  *           $ref: '#/components/schemas/PedidoFuente'
+ *
+ *         tipo_entrega:
+ *           $ref: '#/components/schemas/PedidoTipoEntrega'
+ *         direccion_entrega:
+ *           type: string
+ *           nullable: true
+ *           description: |
+ *             Requerida si tipo_entrega=DOMICILIO.
+ *             Si no se envía, el backend usa cliente.direccion como fallback.
+ *           example: "7a Avenida 10-20, Zona 1, Guatemala"
+ *         requiere_factura:
+ *           type: boolean
+ *           example: true
+ *         nit_factura:
+ *           type: string
+ *           nullable: true
+ *           description: |
+ *             Si requiere_factura=true:
+ *             - si no se envía, el backend usa cliente.nit o "CF".
+ *           example: "1234567-8"
+ *         nombre_factura:
+ *           type: string
+ *           nullable: true
+ *           description: |
+ *             Si requiere_factura=true:
+ *             - si no se envía, el backend usa cliente.nombre.
+ *           example: "Juan Pérez"
+ *
  *         cargo_envio:
  *           type: number
  *           nullable: true
+ *           description: |
+ *             Si tipo_entrega=RECOGER_EN_LOCAL, el backend fuerza cargo_envio=0.
  *           example: 0
  *         notas_cliente:
  *           type: string
@@ -182,6 +216,22 @@ const autenticacionMiddleware = require("../middlewares/autenticacion.middleware
  *           type: string
  *           format: date
  *           example: "2026-01-21"
+ *
+ *         tipo_entrega:
+ *           $ref: '#/components/schemas/PedidoTipoEntrega'
+ *         direccion_entrega:
+ *           type: string
+ *           nullable: true
+ *         requiere_factura:
+ *           type: boolean
+ *           example: true
+ *         nit_factura:
+ *           type: string
+ *           example: "CF"
+ *         nombre_factura:
+ *           type: string
+ *           nullable: true
+ *
  *         subtotal_productos:
  *           type: number
  *           example: 150
@@ -313,6 +363,13 @@ router.get("/:id", autenticacionMiddleware, pedidoController.obtenerPedidoPorId)
  *       - precio_unitario:
  *         - solo ADMINISTRADOR/VENDEDOR puede enviarlo (MANUAL)
  *         - si no se envía => usa precio_venta_por_defecto (SISTEMA)
+ *
+ *       Checkout:
+ *       - tipo_entrega:
+ *         - DOMICILIO: requiere direccion_entrega o usa cliente.direccion como fallback
+ *         - RECOGER_EN_LOCAL: fuerza cargo_envio = 0
+ *       - requiere_factura:
+ *         - true: nit_factura cae a cliente.nit o "CF"; nombre_factura cae al nombre del cliente
  *     tags: [Pedidos]
  *     security:
  *       - bearerAuth: []
@@ -323,19 +380,29 @@ router.get("/:id", autenticacionMiddleware, pedidoController.obtenerPedidoPorId)
  *           schema:
  *             $ref: '#/components/schemas/PedidoCreateInput'
  *           examples:
- *             ejemplo:
+ *             domicilioConFactura:
+ *               summary: Domicilio con factura (usa fallback si omites dirección/NIT)
  *               value:
- *                 id_usuario_cliente: 5
  *                 id_ubicacion_salida: 2
- *                 fuente: "ADMIN"
- *                 cargo_envio: 0
- *                 notas_cliente: "Entregar rápido"
+ *                 tipo_entrega: "DOMICILIO"
+ *                 direccion_entrega: "7a Avenida 10-20, Zona 1"
+ *                 requiere_factura: true
+ *                 nit_factura: "1234567-8"
+ *                 nombre_factura: "Juan Pérez"
+ *                 cargo_envio: 25
  *                 detalles:
  *                   - id_presentacion_producto: 10
  *                     cantidad_unidad_venta: 2
+ *             recogerSinFactura:
+ *               summary: Recoger en local (cargo_envio se fuerza a 0)
+ *               value:
+ *                 id_ubicacion_salida: 2
+ *                 tipo_entrega: "RECOGER_EN_LOCAL"
+ *                 requiere_factura: false
+ *                 cargo_envio: 999
+ *                 detalles:
  *                   - id_presentacion_producto: 12
  *                     cantidad_unidad_venta: 1
- *                     precio_unitario: 15
  *     responses:
  *       201:
  *         description: Pedido creado y stock reservado
