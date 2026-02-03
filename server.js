@@ -70,6 +70,12 @@ app.use("/api/health", rutasHealth);
 // Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.get("/openapi.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).send(swaggerSpec);
+});
+
+
 // 404
 app.use((req, res) => {
   res.status(404).json({ mensaje: "Ruta no encontrada" });
